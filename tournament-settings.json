@@ -1,0 +1,8 @@
+{
+  "eligible_statuses": ["COMPLETE", "FINISHED", "READY", "READY TO BUILD"],
+  "excluded_characters": ["DUMMYBOT"],
+  "round_time_seconds": 120,
+  "post_match_seconds": 5,
+  "championship_first_to": 3,
+  "prototype_hp": 5000
+}

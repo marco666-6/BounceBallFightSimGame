@@ -1,0 +1,312 @@
+Inspired by The Dark Lord from Alan Becker's Animator vs. Animation series.
+
+============================================================
+CHARACTER 02: DARKLORD
+PROTOTYPE STATUS: COMPLETE
+============================================================
+
+ROLE / THEME
+------------------------------------------------------------
+DarkLord is a very fast, short-range pressure and arena-control
+fighter who uses the Vira-Band to create weapons, portals, creatures,
+and unstable Vira-Liquid. His rapid Vira-Blade attacks gradually seed
+the arena with liquid hazards before every tenth Vira Stack causes all
+active liquid pools to harden and erupt into dangerous red-edged spikes.
+
+DarkLord is strongest when his movement repeatedly carries him near the
+enemy. His wall teleport gives him an occasional aimed engage, while
+Dark Energy Fire Ball and roaming Vira-Spiders let him apply pressure
+when his normal movement path does not reach the enemy.
+
+Visual Identity:
+- Bright red 3D ball inspired by The Dark Lord's red stick-figure body,
+  with a darker red shadow side, an intense red glow, sharp eyes, and
+  visible black-and-red Vira-Bands worn around both sides of the body.
+- Vira constructs are primarily black liquid or hardened black matter
+  with vivid red outlines, inner red cracks, and smoky red particles.
+- Vira-Liquid pools have irregular, slightly animated silhouettes so
+  repeated pools do not look identical.
+- Liquid constructs melt back into fluid and vaporize into dark smoke.
+- Hardened constructs form quickly with sharp, aggressive movements.
+- Important attacks use localized glow, hit-stop, squash, speed streaks,
+  particles, and restrained screen shake without fullscreen flashes.
+
+
+FINALIZED PROTOTYPE STATS
+------------------------------------------------------------
+Prototype HP: 5000
+Intended Tournament HP: To be rebalanced when the shared engine exists.
+Defense: Not separately implemented in this prototype.
+Movement Speed: Very Fast, approximately 350 pixels per second.
+Movement Behavior:
+- Constant-speed DVD-style movement.
+- Does not naturally chase enemies.
+- Wall and fighter collisions preserve movement speed.
+- Skills and passives are the only mechanics allowed to aim, redirect,
+  stop, or alter movement.
+
+
+BASIC ATTACK: VIRA-BLADE SLASH
+------------------------------------------------------------
+Attack Name: Vira-Blade Slash
+Range: Short range, approximately 125 pixels from DarkLord's surface
+Interval: 0.35 seconds while an enemy is in range
+Damage: 32 per successful slash
+
+Attack Behavior:
+- DarkLord forms a Vira-Blade from the Vira-Band and slashes the enemy.
+- The attack does not require physical contact.
+- The blade reaches toward the target and may alternate between left,
+  right, overhead, and crossing slash animations.
+- Basic attacks do not redirect or stop DarkLord's movement.
+
+Every Two Successful Basic Attack Hits:
+- Creates one irregular Vira-Liquid pool centered on the enemy's
+  position at the moment of the second hit.
+- Grants DarkLord 1 Vira Stack.
+- The two-hit counter counts successful Vira-Blade hits only.
+- Missed or interrupted attack attempts do not advance the counter.
+
+Vira-Liquid:
+- Pools remain on the arena floor until the next Vira Eruption.
+- Liquid pools are harmless before they harden.
+- Pools do not move, block movement, or alter fighter collisions.
+- Overlapping pools remain mechanically separate but visually blend
+  together into a larger irregular mass.
+
+Vira Stacks:
+- Maximum: 10
+- Each stack represents one active Vira-Liquid pool created by the
+  basic attack's two-hit effect.
+- The current stack count is always visible in the HUD.
+- Reaching 10 stacks immediately activates Vira Eruption.
+
+Vira Eruption:
+- All active Vira-Liquid pools harden at the same time and burst long,
+  red-edged spikes outward from their irregular edges.
+- Initial Eruption Damage: 145 to an enemy touching a pool when it erupts
+- Hardened Spike Contact Damage: 38 every 0.5 seconds
+- Hardened Duration: 6.25 seconds
+- Hardened spikes extend a shorter distance from the liquid pool edges.
+- Contact damage uses the visible hardened center and every individual
+  spike's full edge-to-tip segment, not only the original liquid area.
+- An enemy may be damaged by multiple separate overlapping spike pools.
+- Hardened pools are hazards but do not block fighter movement.
+- At the end of the duration, the spikes melt and vaporize.
+- Vira Stacks and the two-hit counter reset immediately when the
+  eruption begins; DarkLord may create new liquid while old spikes remain.
+
+Finalized Presentation:
+- Each slash forms an oversized asymmetric forked Vira-Blade based on the
+  supplied reference silhouette, then physically rotates through an
+  enemy-facing swipe path.
+- The forked branches sit near DarkLord's grip while the long killing point
+  projects outward toward the enemy.
+- Vira-Blades have black bodies, thick dark-red outlines, jagged inner
+  cuts, red electricity crawling between their branches, and impact particles.
+- Every second hit has a stronger impact frame as liquid splashes outward
+  beneath the enemy.
+- Before eruption, all pools pulse red once in quick succession.
+- On eruption, pools snap solid, grow jagged edge spikes, throw dark
+  fragments upward, and release a short localized camera shake.
+- Melting spikes visibly collapse, sag, and drip into widened black fluid
+  before evaporating into smoky black-and-red particles.
+
+
+SKILL 1: VIRA-PORTAL AMBUSH
+------------------------------------------------------------
+Cooldown: 9 seconds, beginning when the teleport activates
+Trigger: Automatically activates on DarkLord's next wall collision while
+the skill is ready
+
+Teleport Behavior:
+- On wall collision, DarkLord places a Vira-Liquid portal on that wall
+  and is immediately swallowed by it.
+- DarkLord becomes untargetable and cannot attack during the transition.
+- After 0.45 seconds, a second portal grows at the corresponding position
+  on the opposite arena wall.
+- DarkLord crawls out of the second portal and immediately dashes toward
+  the enemy's position at the moment he emerges.
+- Both portals melt and vaporize after use.
+
+Ambush Dash:
+- Dash Speed: 2.5x default movement speed, approximately 875 pixels
+  per second
+- Dash Direction: Locked toward the enemy's snapshotted position
+- The dash continues until DarkLord hits the enemy or an arena wall.
+- DarkLord cannot basic attack or cast Dark Energy Fire Ball during
+  the dash.
+
+Enemy Hit:
+- DarkLord forms two Vira-Blades and stabs into the enemy.
+- Damage: 217
+- DarkLord and the enemy are locked together in place for 1 second.
+- DarkLord releases the enemy after 1 second and immediately returns to
+  normal movement at default speed.
+- The enemy remains Stunned for 1 additional second, for 2 seconds total
+  from the initial stab.
+- Stun prevents normal movement and starting new attacks, skills, passive
+  actions, or other actions. Anything already deployed continues and finishes.
+
+Wall Miss:
+- The dash ends when DarkLord hits a wall.
+- DarkLord is Immobilized for 2 seconds, then resumes normal movement at
+  default speed.
+- Immobilize prevents movement but still permits basic attacks, skills,
+  passive actions, and normal cooldown progress.
+- Anything deployed before Immobilize, including forced movement, continues
+  and finishes normally.
+
+Finalized Presentation:
+- The entry and exit portals are large wall-bound liquid rifts with layered
+  rotating rings, animated tendrils, branching electricity, and jagged edges.
+- The entry portal splashes up the wall and folds over DarkLord like a
+  liquid mouth.
+- The exit portal pushes outward before DarkLord's hands and blades tear
+  through it.
+- The ambush dash uses broken liquid particles and branching red electricity
+  trails without static straight-line speed rails.
+- A successful double stab creates twin red impact lines, strong hit-stop,
+  and a restrained camera shake.
+- During the one-second double-stab lock, violent red electricity continuously
+  wraps around and bridges between DarkLord, both embedded blades, and the enemy.
+- A missed dash makes DarkLord strike the wall, briefly flatten, drip
+  Vira-Liquid, and visibly struggle free during Immobilize.
+
+
+SKILL 2: DARK ENERGY FIRE BALL
+------------------------------------------------------------
+Cooldown: 8 seconds, beginning immediately after cast
+Requirement: At least 1 Vira Stack
+Projectile Count: Equal to DarkLord's current Vira Stacks, from 1 to 10
+Stack Rule:
+- The current Vira Stack count is snapshotted when the skill casts.
+- Casting does not consume Vira Stacks or remove Vira-Liquid pools.
+
+Cast Behavior:
+- DarkLord briefly opens a small Vira portal above himself and launches
+  the snapshotted number of Dark Energy Fire Balls in a rapid fan.
+- The center projectile aims at the enemy's position at cast time.
+- Additional projectiles spread evenly to both sides of the center aim.
+- Projectiles travel in straight lines and do not home after launch.
+- Projectiles disappear when they hit an enemy or arena wall.
+
+Projectile Stats:
+- Damage: 42 per Fire Ball
+- Speed: Approximately 520 pixels per second
+- Radius: Approximately 24 pixels
+- Launch Interval: 0.07 seconds between projectiles
+- A single enemy may be hit by multiple Fire Balls from one cast.
+
+Finalized Presentation:
+- The portal forms as a rotating black disc with a red burning rim.
+- Fire Balls are large irregular black-red energy masses with animated flame
+  shells, layered inner cores, orbiting sparks and rings, branching electrical
+  tails, trailing energy fragments, and smoky particles.
+- Higher-stack casts make the portal larger and intensify its glow.
+- Each projectile produces a compact dark-energy burst on impact.
+
+
+PASSIVE: VIRA-SPIDER MIGRATION
+------------------------------------------------------------
+Recharge: 20 seconds, beginning when a wave spawns
+Creatures Per Wave: 6 Vira-Spiders
+Damage: 55 per spider hit
+
+Spawn / Movement Behavior:
+- Six Vira-Spiders crawl out from several Vira-Liquid portals distributed
+  along the arena walls.
+- Each spider chooses a different destination point on another wall and
+  travels toward it in a straight line at approximately 300 pixels per
+  second.
+- Their routes are not aimed directly at the enemy.
+- A spider damages the enemy once if its body touches them while crossing.
+- Each spider may hit the enemy only once per wave.
+- Spiders do not block movement and cannot be attacked or destroyed.
+- On reaching the destination wall, each spider crawls into a small
+  Vira-Liquid portal, which then melts and vaporizes.
+
+Finalized Presentation:
+- Wall portals appear in a staggered sequence before clawed black-and-red
+  Vira-Spiders pull themselves into the arena.
+- Each Vira-Spider follows the reference silhouette: a dark-red vertical
+  oval core, two hooked lower claws, and four extremely long arcing legs
+  outlined in bright red.
+- Spiders have layered black-red bodies, bright eyes, articulated jointed
+  legs, hooked claws, small electrical discharges, liquid droplets, and
+  broken red movement trails.
+- A spider hit creates a red claw-mark impact and briefly splashes apart
+  before reforming and continuing toward its destination.
+- The six destination portals disappear one after another as the spiders
+  finish their migration.
+
+
+STATUS DEFINITIONS
+------------------------------------------------------------
+Stun:
+- Prevents normal movement and starting new attacks, skills, passive actions,
+  or other actions.
+- Already-deployed actions and effects continue and finish normally.
+
+Immobilize:
+- Prevents normal movement only.
+- Attacks, skills, passive actions, and cooldowns continue normally.
+- Already-deployed actions and forced movement continue and finish normally.
+
+
+FINALIZED AUDIO
+------------------------------------------------------------
+- All 11 supplied sounds are implemented and mapped to distinct events.
+- Liquid variants are selected randomly when pools form or hardened
+  constructs melt, preventing repeated pool events from sounding identical.
+- DarkLord-ViraBladeSlash.mp3
+- DarkLord-ViraEruption.mp3
+- DarkLord-ViraLiquid-1.mp3
+- DarkLord-ViraLiquid-2.mp3
+- DarkLord-Portal-In.mp3
+- DarkLord-Portal-Out.mp3
+- DarkLord-DoubleStab-Stab.mp3
+- DarkLord-DoubleStab-LetGo.mp3
+- DarkLord-WallCrash.mp3
+- DarkLord-DarkEnergyFireBall.mp3
+- DarkLord-ViraSpider.mp3
+
+
+COMPLETED PROTOTYPE SYSTEMS
+------------------------------------------------------------
+- DarkLord.py is a standalone autonomous showcase against DummyBot.
+- Vira-Blade Slash, its two-hit counter, pools, stacks, eruption damage,
+  hardened contact damage, melting, and immediate stack reset are implemented.
+- Vira-Portal Ambush supports opposite-wall travel, aimed dash, successful
+  double-stab lock, enemy Stun, wall-miss crash, and self-Immobilize.
+- Dark Energy Fire Ball snapshots the current stack count and fires the
+  matching number of straight projectiles without consuming stacks.
+- Vira-Spider Migration creates six independently routed wall-to-wall spiders.
+- The HUD shows health, ten Vira Stack indicators, status labels, cooldowns,
+  and floating combat text.
+- All supplied audio files are loaded from DarkLord-SoundEffects.
+- The prototype uses Prototype-Shared/visuals.py for the exact established
+  MoroZhar arena, 3D ball presentation, movement trails, fonts, and
+  DummyBot punch animation.
+- DarkLord-specific visuals use staged anticipation, active, impact, and
+  recovery presentation instead of single-frame placeholder geometry.
+
+
+PROTOTYPE NOTES
+------------------------------------------------------------
+- Combat is fully autonomous.
+- DarkLord's Vira-Liquid pools and hardened spikes are arena-floor effects
+  and do not alter movement collision.
+- Skill 2 intentionally does not consume Vira Stacks, allowing the basic
+  attack system to reliably reach Vira Eruption.
+- Vira-Portal Ambush uses the opposite arena wall because the standalone
+  rectangular prototype has no meaningful wall thickness to travel through.
+- Run DarkLord-Prototype/DarkLord.py to watch the completed matchup.
+- Headless long-run verification confirmed repeated portal, projectile,
+  eruption, spider, Stun, and Immobilize cycles without runtime errors.
+- Major visual states were individually rendered and inspected after the
+  shared-presentation rework.
+- A targeted collision test confirmed that an enemy outside the original
+  pool area but touching a visible spike tip receives contact damage.
+- DarkLord has a registered adapter in the root main.py tournament runtime
+  and can autonomously fight other registered eligible characters.

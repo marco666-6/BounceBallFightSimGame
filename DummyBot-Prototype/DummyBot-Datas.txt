@@ -1,0 +1,93 @@
+============================================================
+CHARACTER: DUMMYBOT
+PROTOTYPE STATUS: COMPLETE
+============================================================
+
+ROLE / THEME
+------------------------------------------------------------
+DummyBot is a simple grey sparring opponent used to validate character
+prototypes. It has no offensive skills and exists to test contact
+combat, movement, status effects, particles, audio, and passive logic.
+
+Visual Identity:
+- Grey 3D ball with metallic shading and simple eyes.
+- Reacts visibly to hits, burn, slow, freeze, and other effects.
+
+
+FINALIZED PROTOTYPE STATS
+------------------------------------------------------------
+Prototype HP: 5000
+Intended Tournament HP: To be rebalanced when the shared engine exists.
+Defense: Not separately implemented in this prototype.
+Movement Speed: Low-Medium, approximately 212 pixels per second.
+Movement Behavior:
+- Constant-speed DVD-style movement.
+- Does not naturally chase or flee from enemies.
+- Wall and fighter collisions preserve movement speed.
+- Slow reduces movement speed to 25%.
+- Freeze completely stops movement.
+
+
+BASIC ATTACK
+------------------------------------------------------------
+Attack Name: Punch
+Range: Contact
+Interval: 1 second while colliding with an enemy
+Damage: 20
+Effects:
+- Deals direct physical damage only.
+- Does not apply knockback or alter movement speed.
+- Creates a simple blocky mechanical fist animation from a randomized
+  incoming direction.
+- The fist quickly passes through the target with muted speed streaks
+  and sparse dust particles.
+
+
+SKILL 1
+------------------------------------------------------------
+None
+
+
+SKILL 2
+------------------------------------------------------------
+None
+
+
+PASSIVE: OH GOD HELP ME
+------------------------------------------------------------
+Recharge: 10 seconds
+Charges: 3 redirected wall bounces per recharge
+Effect:
+- When DummyBot wall-bounces with charges available, its movement
+  redirects away from the enemy's last known position.
+- Redirection preserves DummyBot's constant movement speed.
+- Deals no damage.
+
+
+SUPPORTED STATUS SYSTEMS
+------------------------------------------------------------
+DummyBot currently supports these shared prototype combat states:
+- Ice Stacks
+- Heat Stacks and timed Heat Stack decay of one stack every 4.5 seconds
+- Freeze and increased frozen damage
+- Stun
+- Slow
+- Burn damage over time
+- Thermal Shock trigger locking
+- Hit reaction, squash, status particles, and floating damage text
+
+
+FINALIZED AUDIO
+------------------------------------------------------------
+- DummyBot currently uses DummyBot-SoundEffects/MoroZhar-Punch.mp3
+  as its temporary punch sound.
+
+
+PROTOTYPE NOTES
+------------------------------------------------------------
+- DummyBot.py is a reusable sparring class.
+- Its body renderer, movement presentation, and punch animation are shared
+  by completed character prototypes through Prototype-Shared/visuals.py.
+- Run any completed character prototype to watch a matchup.
+- DummyBot is intentionally simple so each new character's mechanics
+  remain the focus of its prototype.

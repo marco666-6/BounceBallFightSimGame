@@ -1,0 +1,178 @@
+============================================================
+CHARACTER 01: MOROZHAR
+PROTOTYPE STATUS: COMPLETE
+============================================================
+
+ROLE / THEME
+------------------------------------------------------------
+MoroZhar is a medium-speed pressure fighter who controls extreme
+cold and heat. He builds elemental stacks through contact attacks,
+then converts them into freeze control, burn damage, Thermal Shock,
+or increasingly powerful Heat Vision casts.
+
+Visual Identity:
+- Dark blue 3D ball with separate ice-blue and heat-red detailing.
+- The next queued punch is always shown through a colored rotating
+  aura, overhead label, and HUD label.
+- Every successful punch creates a large fading animated fist that
+  strikes the enemy from a randomized incoming direction.
+- The fist quickly passes completely through the target instead of
+  stopping at the impact point.
+- Normal Punch is metallic, Ice Punch uses icy shards and frost
+  particles, and Heat Punch uses fiery particles and embers.
+- Ice, heat, stack, status, cooldown, and damage effects are visible.
+
+
+FINALIZED PROTOTYPE STATS
+------------------------------------------------------------
+Prototype HP: 5000
+Intended Tournament HP: To be rebalanced when the shared engine exists.
+Defense: Not separately implemented in this prototype.
+Movement Speed: Medium-Fast, approximately 280 pixels per second.
+Movement Behavior:
+- Constant-speed DVD-style movement.
+- Does not naturally chase enemies.
+- Wall and fighter collisions preserve movement speed.
+- Skills and passives are the only mechanics allowed to aim,
+  redirect, stop, or alter movement.
+
+
+BASIC ATTACK
+------------------------------------------------------------
+Attack Names: Punch / Ice Punch / Heat Punch
+Range: Contact
+Interval: 0.5 seconds while colliding with an enemy
+
+Attack Selection:
+- 10% Normal Punch
+- 35% Ice Punch
+- 55% Heat Punch
+- The next selected punch is visibly telegraphed before contact.
+
+Damage:
+- Normal Punch: 150
+- Ice Punch: 60 and applies 1 Ice Stack
+- Heat Punch: 65 and applies 1 Heat Stack
+
+Ice Stacks:
+- Maximum: 3
+- Reaching 3 stacks primes the target but does not immediately Freeze it.
+- Applying another Ice Stack while the target is already at 3 stacks
+  Freezes the target for 5 seconds.
+- Ice Stacks reset to 0 when Freeze activates.
+- Frozen targets take 10% increased damage.
+
+Heat Stacks:
+- Maximum: 3
+- At 3 stacks, the target is Burned for 7 seconds.
+- Heat Stacks remain stored after Burn activates.
+- Stored stacks decay one at a time every 4.5 seconds without
+  additional heat application.
+- Stored stacks are consumed when Heat Vision is cast.
+
+Burn:
+- Duration: 7 seconds
+- Damage: 32 every 0.5 seconds
+
+Thermal Shock:
+- Activates once when the target has both Ice and Heat Stacks.
+- Damage: 50
+- Does not consume either stack type.
+- Cannot repeatedly trigger from the same unchanged mixed-stack state.
+
+
+SKILL 1: FREEZING BREATH
+------------------------------------------------------------
+Cooldown: 7.5 seconds, beginning immediately after cast
+Range / Area: Medium forward cone, approximately 430 pixels
+Aim Behavior:
+- Casts only when the enemy is inside the forward cone.
+- Fires in MoroZhar's current movement direction.
+- Does not auto-aim or chase the target.
+
+Effects:
+- Initial Damage: 150
+- Applies 2 Ice Stacks
+- Slows movement by 75% for 3 seconds
+- Can activate Freeze when hitting a target already at 3 Ice Stacks
+
+Finalized Presentation:
+- No visible filled cone.
+- Directional frost wind, mist, and ice particles fill the entire
+  cone-shaped gameplay area.
+- Frozen enemies are surrounded by an irregular, opaque ice prison
+  with snow crust, frozen chunks, jagged growths, and icicles.
+- At 2 seconds before thawing, visible cracks begin forming and
+  MoroZhar-IceBreakForEnemy.mp3 plays.
+- When Freeze ends, the ice prison shatters and the enemy resumes
+  movement.
+- Freeze prevents normal movement and starting new attacks, skills, passive
+  actions, or other actions. Anything already deployed, including Heat Vision
+  and Freezing Breath, continues and finishes normally.
+
+
+SKILL 2: HEAT VISION
+------------------------------------------------------------
+Base Cooldown: 7.5 seconds after the beam period ends
+Requirement: At least 1 stored Heat Stack
+Range / Area: Straight beam ending at the first enemy hit or arena wall
+
+Cast-Level Rules:
+- Stored stacks are snapshotted and consumed when cast.
+- Level 1: 1 stored stack, 2.0-second beam
+- Level 2: 2 stored stacks, 3.5-second beam
+- Level 3: 3 stored stacks, 8.0-second beam
+- MoroZhar may briefly wait for stronger stacks, but Heat Stack decay
+  prevents permanent Level 3 loops.
+
+Beam Effects:
+- Damage: 40 per hit
+- Damage Interval: 0.35 seconds
+- Applies 1 Heat Stack every 2 successful hits
+- Can activate Burn
+- Can activate Thermal Shock against mixed Ice and Heat Stacks
+- Frozen targets take the standard 10% increased damage
+
+Aim / Collision Behavior:
+- Auto-aims toward the target at approximately 1.75 radians
+  per second, allowing the target to evade it.
+- Stops exactly at the target surface when it hits.
+- Stops exactly at the arena wall when it misses.
+- Never passes through targets or arena walls.
+
+
+PASSIVE: REDIRECTION
+------------------------------------------------------------
+Recharge: 10 seconds
+Charges: 3 redirected wall bounces per recharge
+Effect:
+- When MoroZhar wall-bounces with charges available, his movement
+  direction redirects toward the enemy's last known position.
+- Redirection preserves MoroZhar's constant movement speed.
+- Deals no damage.
+
+
+FINALIZED AUDIO
+------------------------------------------------------------
+- MoroZhar-Punch.mp3
+- MoroZhar-Ice Punch.mp3
+- MoroZhar-HeatPunch.mp3
+- MoroZhar-FreezingBreath.mp3
+- MoroZhar-HeatVisionOneStack.mp3
+- MoroZhar-HeatVisionTwoStack.mp3
+- MoroZhar-HeatVisionThreeStack.mp3
+- MoroZhar-IceBreakForEnemy.mp3
+
+
+PROTOTYPE NOTES
+------------------------------------------------------------
+- Combat is fully autonomous.
+- Fullscreen flashing effects are intentionally disabled.
+- Effects use localized particles, glow, impact frames, hit-stop,
+  ball squash, and screen shake.
+- MoroZhar.py currently contains the standalone battle showcase and
+  imports DummyBot.py as its opponent.
+- The arena, fonts, and DummyBot punch presentation now use
+  Prototype-Shared/visuals.py so later prototypes preserve the same style.
+- MoroZhar has a registered adapter in the root main.py tournament runtime
+  and can autonomously fight other registered eligible characters.
