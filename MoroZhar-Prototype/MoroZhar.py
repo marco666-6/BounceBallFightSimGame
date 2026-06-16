@@ -164,6 +164,7 @@ class MoroZhar:
     vision_timer: float = 5.2
     redirect_timer: float = 4.0
     redirects: int = 3
+    redirect_boost: float = 0
     hit_flash: float = 0
     squash: float = 0
     roll: float = 0
@@ -174,14 +175,18 @@ class MoroZhar:
     next_punch: str = "ICE PUNCH"
 
     def update_timers(self, dt):
+        boost_before = self.redirect_boost
         self.attack_timer -= dt
         self.breath_timer -= dt
         self.vision_timer -= dt
         self.redirect_timer -= dt
+        self.redirect_boost = max(0, self.redirect_boost - dt)
         self.hit_flash = max(0, self.hit_flash - dt)
         self.squash = max(0, self.squash - dt * 5)
         self.punch_anim = max(0, self.punch_anim - dt)
         self.roll += self.vel.length() * dt / self.radius
+        if boost_before > 0 and self.redirect_boost <= 0:
+            self.vel /= 1.35
         if self.redirect_timer <= 0:
             self.redirect_timer = 10
             self.redirects = 3
@@ -273,6 +278,10 @@ class Battle:
 
     def freeze(self):
         self.text("FROZEN", self.dummy.pos + Vec2(0, -88), ICE_WHITE, True)
+        healed = min(100, self.moro.max_hp - self.moro.hp)
+        self.moro.hp += healed
+        if healed > 0:
+            self.text(f"+{int(healed)} HP", self.moro.pos + Vec2(0, -72), ICE_WHITE, True)
         self.burst(self.dummy.pos, ICE, 42, 360, "shard", 6)
         for _ in range(28):
             p = self.dummy.pos + Vec2(random.uniform(-58, 58), random.uniform(-58, 58))
@@ -330,8 +339,13 @@ class Battle:
         self.damage_dummy(damage, kind, color, 2)
         if kind == "ICE PUNCH" and d.add_ice(1):
             self.freeze()
-        elif kind == "HEAT PUNCH" and d.add_heat(1):
-            self.burn()
+        elif kind == "HEAT PUNCH":
+            healed = min(12, self.moro.max_hp - self.moro.hp)
+            self.moro.hp += healed
+            if healed > 0:
+                self.text(f"+{healed:g} HP", self.moro.pos + Vec2(0, -72), HEAT)
+            if d.add_heat(1):
+                self.burn()
         if d.should_thermal_shock():
             self.thermal_shock()
         self.roll_next_punch()
@@ -350,7 +364,7 @@ class Battle:
 
     def cast_vision(self):
         stacks = max(1, self.dummy.heat_stacks)
-        durations = {1: 2.0, 2: 3.5, 3: 8.0}
+        durations = {1: 2.0, 2: 3.5, 3: 7.0}
         self.vision_duration = durations[stacks]
         self.vision = self.vision_duration
         self.vision_tick = .05
@@ -379,9 +393,15 @@ class Battle:
                 direction = safe_normal(seek_target.pos - fighter.pos)
                 if away:
                     direction *= -1
-                fighter.vel = direction * fighter.vel.length()
+                speed = fighter.vel.length()
+                if fighter is self.moro:
+                    if fighter.redirect_boost <= 0:
+                        speed *= 1.35
+                    fighter.redirect_boost = 2.5
+                fighter.vel = direction * speed
                 fighter.redirects -= 1
-                self.text("REDIRECT", fighter.pos + Vec2(0, -58), ICE if not away else (190, 195, 205))
+                label = "REDIRECT  x1.35 SPEED" if fighter is self.moro else "REDIRECT"
+                self.text(label, fighter.pos + Vec2(0, -58), ICE if not away else (190, 195, 205))
 
     def update(self, dt):
         self.time += dt
@@ -479,6 +499,10 @@ class Battle:
                     self.vision_tick = .35
                     self.vision_hits += 1
                     self.damage_dummy(40, "HEAT VISION", HEAT, 1)
+                    healed = min(12, m.max_hp - m.hp)
+                    m.hp += healed
+                    if healed > 0:
+                        self.text(f"+{healed:g} HP", m.pos + Vec2(0, -72), HEAT)
                     if self.vision_hits % 2 == 0 and d.add_heat(1):
                         self.burn()
                     if d.should_thermal_shock():
@@ -497,6 +521,10 @@ class Battle:
             if d.burn_tick <= 0:
                 d.burn_tick = .5
                 self.damage_dummy(32, "BURN", HEAT, 1)
+                healed = min(7, self.moro.max_hp - self.moro.hp)
+                self.moro.hp += healed
+                if healed > 0:
+                    self.text(f"+{healed:g} HP", self.moro.pos + Vec2(0, -72), HEAT)
             if random.random() < dt * 20:
                 self.particles.append(Particle(d.pos + Vec2(random.uniform(-30, 30), random.uniform(-20, 30)),
                                                Vec2(random.uniform(-20, 20), random.uniform(-120, -70)),

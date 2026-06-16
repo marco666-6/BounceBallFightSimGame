@@ -85,8 +85,10 @@ Vira Eruption:
 - All active Vira-Liquid pools harden at the same time and burst long,
   red-edged spikes outward from their irregular edges.
 - Initial Eruption Damage: 145 to an enemy touching a pool when it erupts
-- Hardened Spike Contact Damage: 38 every 0.5 seconds
-- Hardened Duration: 6.25 seconds
+- Hardened Spike Contact Damage: 37 every 0.5 seconds
+- Each successful hardened spike damage tick heals DarkLord by half of
+  the spike damage dealt, up to maximum HP.
+- Hardened Duration: 7.25 seconds
 - Hardened spikes extend a shorter distance from the liquid pool edges.
 - Contact damage uses the visible hardened center and every individual
   spike's full edge-to-tip segment, not only the original liquid area.
@@ -140,6 +142,9 @@ Ambush Dash:
 Enemy Hit:
 - DarkLord forms two Vira-Blades and stabs into the enemy.
 - Damage: 217
+- DarkLord heals 100 HP on a successful Double Stab, up to maximum HP.
+- DarkLord gains 2 Vira Stacks on a successful Double Stab and can
+  immediately trigger Vira Eruption if this reaches 10 stacks.
 - DarkLord and the enemy are locked together in place for 1 second.
 - DarkLord releases the enemy after 1 second and immediately returns to
   normal movement at default speed.
@@ -192,7 +197,7 @@ Cast Behavior:
 - Projectiles disappear when they hit an enemy or arena wall.
 
 Projectile Stats:
-- Damage: 42 per Fire Ball
+- Damage: 47 per Fire Ball
 - Speed: Approximately 520 pixels per second
 - Radius: Approximately 24 pixels
 - Launch Interval: 0.07 seconds between projectiles
@@ -211,7 +216,7 @@ PASSIVE: VIRA-SPIDER MIGRATION
 ------------------------------------------------------------
 Recharge: 20 seconds, beginning when a wave spawns
 Creatures Per Wave: 6 Vira-Spiders
-Damage: 55 per spider hit
+Damage: 65 per spider hit
 
 Spawn / Movement Behavior:
 - Six Vira-Spiders crawl out from several Vira-Liquid portals distributed

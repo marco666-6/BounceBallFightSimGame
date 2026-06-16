@@ -52,7 +52,7 @@ Attack Selection:
 Damage:
 - Normal Punch: 150
 - Ice Punch: 60 and applies 1 Ice Stack
-- Heat Punch: 65 and applies 1 Heat Stack
+- Heat Punch: 65, applies 1 Heat Stack, and heals MoroZhar for 12 HP
 
 Ice Stacks:
 - Maximum: 3
@@ -61,6 +61,8 @@ Ice Stacks:
   Freezes the target for 5 seconds.
 - Ice Stacks reset to 0 when Freeze activates.
 - Frozen targets take 10% increased damage.
+- When MoroZhar successfully Freezes the enemy, he heals for 100 HP,
+  up to maximum HP.
 
 Heat Stacks:
 - Maximum: 3
@@ -73,6 +75,7 @@ Heat Stacks:
 Burn:
 - Duration: 7 seconds
 - Damage: 32 every 0.5 seconds
+- Each Burn damage tick heals MoroZhar for 7 HP, up to maximum HP.
 
 Thermal Shock:
 - Activates once when the target has both Ice and Heat Stacks.
@@ -121,13 +124,14 @@ Cast-Level Rules:
 - Stored stacks are snapshotted and consumed when cast.
 - Level 1: 1 stored stack, 2.0-second beam
 - Level 2: 2 stored stacks, 3.5-second beam
-- Level 3: 3 stored stacks, 8.0-second beam
+- Level 3: 3 stored stacks, 7.0-second beam
 - MoroZhar may briefly wait for stronger stacks, but Heat Stack decay
   prevents permanent Level 3 loops.
 
 Beam Effects:
 - Damage: 40 per hit
 - Damage Interval: 0.35 seconds
+- Each successful Heat Vision hit heals MoroZhar for 12 HP, up to maximum HP.
 - Applies 1 Heat Stack every 2 successful hits
 - Can activate Burn
 - Can activate Thermal Shock against mixed Ice and Heat Stacks
@@ -148,7 +152,9 @@ Charges: 3 redirected wall bounces per recharge
 Effect:
 - When MoroZhar wall-bounces with charges available, his movement
   direction redirects toward the enemy's last known position.
-- Redirection preserves MoroZhar's constant movement speed.
+- Redirection increases MoroZhar's movement speed to 1.35x for 2.5 seconds.
+- Redirecting again during the boost refreshes its duration without stacking.
+- When the boost expires, MoroZhar returns to his normal movement speed.
 - Deals no damage.
 
 

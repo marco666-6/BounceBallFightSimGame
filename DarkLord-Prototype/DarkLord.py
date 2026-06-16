@@ -291,7 +291,7 @@ class Battle:
         self.shake = 17
         for pool in self.pools:
             if pool.hardened <= 0 and not pool.spent:
-                pool.hardened, pool.tick = 6.25, .5
+                pool.hardened, pool.tick = 7.25, .5
                 self.burst(pool.pos, RED, 25, 420, "spark", 5)
                 if pool.pos.distance_to(self.dummy.pos) < 80:
                     self.damage_dummy(145, "ERUPTION", 3)
@@ -339,6 +339,14 @@ class Battle:
         self.lock_offset = self.dummy.pos - d.pos
         self.sound.play("stab")
         self.damage_dummy(217, "DOUBLE STAB", 4)
+        healed = min(100, d.max_hp - d.hp)
+        d.hp += healed
+        if healed > 0:
+            self.text(f"+{int(healed)} HP", d.pos + Vec2(0, -72), HOT_RED, True)
+        d.stacks = min(10, d.stacks + 2)
+        self.text(f"VIRA STACK  {d.stacks}/10", d.pos + Vec2(0, -104), RED, True)
+        if d.stacks >= 10:
+            self.erupt()
         self.text("STUNNED  2.0s", self.dummy.pos + Vec2(0, -92), HOT_RED, True)
 
     def cast_fire(self):
@@ -484,7 +492,12 @@ class Battle:
                         break
                 if pool.tick <= 0 and spike_hit:
                     pool.tick = .5
-                    self.damage_dummy(38, "VIRA SPIKES")
+                    spike_damage = 37
+                    self.damage_dummy(spike_damage, "VIRA SPIKES")
+                    healed = min(spike_damage * .5, d.max_hp - d.hp)
+                    d.hp += healed
+                    if healed > 0:
+                        self.text(f"+{healed:g} HP", d.pos + Vec2(0, -72), HOT_RED)
         expired = [p for p in self.pools if p.hardened <= 0 and p.hardened != 0 and p.melt <= 0]
         for pool in expired:
             pool.hardened = 0
@@ -503,7 +516,7 @@ class Battle:
             fire.pos += fire.vel * dt
             if fire.pos.distance_to(bot.pos) < fire.radius + bot.radius:
                 fire.life = 0
-                self.damage_dummy(42, "DARK ENERGY")
+                self.damage_dummy(47, "DARK ENERGY")
                 self.burst(fire.pos, HOT_RED, 14, 250, "spark", 4)
             elif not ARENA.collidepoint(fire.pos):
                 fire.life = 0
@@ -515,7 +528,7 @@ class Battle:
             spider.pos += spider.vel * dt
             if not spider.hit and spider.pos.distance_to(bot.pos) < bot.radius + 25:
                 spider.hit = True
-                self.damage_dummy(55, "VIRA-SPIDER", 2)
+                self.damage_dummy(65, "VIRA-SPIDER", 2)
             if spider.pos.distance_to(spider.end) < 18:
                 spider.vel = Vec2()
         self.spiders = [s for s in self.spiders if s.vel.length_squared()]
@@ -603,7 +616,7 @@ class Battle:
                 direction = safe_normal(point - (pool.pos + offset))
                 side = Vec2(-direction.y, direction.x)
                 if pool.hardened > 0:
-                    growth = clamp((6.25 - pool.hardened) / .25, 0, 1)
+                    growth = clamp((7.25 - pool.hardened) / .25, 0, 1)
                     collapse = 1
                 else:
                     growth = 1

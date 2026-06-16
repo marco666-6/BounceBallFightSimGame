@@ -136,13 +136,20 @@ class FighterSlot:
         return self.body.max_hp
 
 
+def randomize_opening_direction(body, side):
+    enemy_wall_x = ARENA.right if side == 0 else ARENA.left
+    target = Vec2(enemy_wall_x, random.uniform(ARENA.top + body.radius, ARENA.bottom - body.radius))
+    body.vel = safe_normal(target - body.pos) * body.vel.length()
+    body.facing = safe_normal(body.vel)
+
+
 def make_slot(key, side, muted):
     pos = Vec2(290 if side == 0 else 985, 385)
     enemy_pos = Vec2(985 if side == 0 else 290, 385)
     if key == "MOROZHAR":
         controller = MORO.Battle(muted)
         controller.moro.pos = pos
-        controller.moro.vel = Vec2(250 if side == 0 else -250, 125 if side == 0 else -125)
+        randomize_opening_direction(controller.moro, side)
         target = TournamentTarget(enemy_pos)
         controller.dummy = target
         controller.round_over = 0
@@ -150,7 +157,7 @@ def make_slot(key, side, muted):
     if key == "DARKLORD":
         controller = DARK.Battle(muted)
         controller.dark.pos = pos
-        controller.dark.vel = Vec2(315 if side == 0 else -315, 154 if side == 0 else -154)
+        randomize_opening_direction(controller.dark, side)
         target = TournamentTarget(enemy_pos)
         controller.dummy = target
         controller.round_over = 0
@@ -272,6 +279,10 @@ class Tournament:
                     if source:
                         source.controller.text("-32  BURN", slot.body.pos + Vec2(0, -62), HEAT)
                         source.controller.impact(slot.body.pos, HEAT, 1)
+                        healed = min(7, source.body.max_hp - source.body.hp)
+                        source.body.hp += healed
+                        if healed > 0:
+                            source.controller.text(f"+{healed:g} HP", source.body.pos + Vec2(0, -72), HEAT)
             if status.heat_stacks:
                 status.heat_decay_timer -= dt
                 if status.heat_decay_timer <= 0:

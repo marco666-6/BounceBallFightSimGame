@@ -30,6 +30,7 @@ The tournament runtime owns:
 - Match selection and championship score
 - Shared arena and HUD
 - Match clock and round transitions
+- Independent randomized opening directions toward the opponent-side wall
 - Opponent-state synchronization
 - Cross-character HP and status transfer
 
