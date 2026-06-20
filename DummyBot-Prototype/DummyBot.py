@@ -15,8 +15,8 @@ class DummyBot:
     pos: Vec2
     vel: Vec2 = field(default_factory=lambda: Vec2(-190, -95))
     radius: float = 46.0
-    hp: float = 5000.0
-    max_hp: float = 5000.0
+    hp: float = 10000.0
+    max_hp: float = 10000.0
     punch_timer: float = 0.0
     punch_anim: float = 0.0
     punch_dir: Vec2 = field(default_factory=lambda: Vec2(1, 0))

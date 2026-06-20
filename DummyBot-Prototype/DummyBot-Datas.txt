@@ -16,7 +16,7 @@ Visual Identity:
 
 FINALIZED PROTOTYPE STATS
 ------------------------------------------------------------
-Prototype HP: 5000
+Prototype HP: 10000
 Intended Tournament HP: To be rebalanced when the shared engine exists.
 Defense: Not separately implemented in this prototype.
 Movement Speed: Low-Medium, approximately 212 pixels per second.
@@ -33,7 +33,7 @@ BASIC ATTACK
 Attack Name: Punch
 Range: Contact
 Interval: 1 second while colliding with an enemy
-Damage: 20
+Damage: 255
 Effects:
 - Deals direct physical damage only.
 - Does not apply knockback or alter movement speed.

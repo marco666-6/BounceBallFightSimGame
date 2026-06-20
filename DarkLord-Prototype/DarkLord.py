@@ -259,10 +259,14 @@ class Battle:
         self.burst(pos, color, 10 + power * 6, 220 + power * 90, "spark", 3 + power)
 
     def damage_dummy(self, amount, label="", power=1):
+        if label == "ERUPTION" and getattr(self, "target_is_summon", False):
+            amount = 45
+            label = "ERUPTION / SUMMON"
         dealt = self.dummy.take_damage(amount)
         self.text(f"-{int(dealt)}" + (f"  {label}" if label else ""), self.dummy.pos + Vec2(0, -64),
                   HOT_RED, power > 1)
         self.impact(self.dummy.pos, power)
+        return dealt
 
     def damage_dark(self, amount):
         self.dark.hp = max(0, self.dark.hp - amount)
@@ -461,7 +465,7 @@ class Battle:
                 base_angle = math.degrees(math.atan2(d.pos.y - bot.pos.y, d.pos.x - bot.pos.x))
                 bot.punch_dir = Vec2(1, 0).rotate(base_angle + random.choice((-125, -75, 75, 125)))
                 self.sound.play("dummy_punch")
-                self.damage_dark(20)
+                self.damage_dark(255)
         if (d.mode == "normal" and not d.hidden and distance <= d.radius + bot.radius + 125
                 and d.attack_timer <= 0 and not self.actions_locked):
             self.slash()
@@ -492,7 +496,7 @@ class Battle:
                         break
                 if pool.tick <= 0 and spike_hit:
                     pool.tick = .5
-                    spike_damage = 37
+                    spike_damage = 12 if getattr(self, "target_is_summon", False) else 37
                     self.damage_dummy(spike_damage, "VIRA SPIKES")
                     healed = min(spike_damage * .5, d.max_hp - d.hp)
                     d.hp += healed
@@ -808,12 +812,14 @@ class Battle:
                 fill.right = rect.right - 3
             pygame.draw.rect(dst, color, fill, border_radius=5)
         bar(pygame.Rect(75, 42, 430, 23), self.dark.hp, 5000, RED)
-        bar(pygame.Rect(W - 505, 42, 430, 23), self.dummy.hp, 5000, GREY, True)
+        bar(pygame.Rect(W - 505, 42, 430, 23), self.dummy.hp, self.dummy.max_hp, GREY, True)
         dst.blit(fonts["name"].render("DARKLORD", True, HOT_RED), (75, 13))
         name = fonts["name"].render("DUMMYBOT", True, (225, 228, 235))
         dst.blit(name, (W - 75 - name.get_width(), 13))
         dst.blit(fonts["small"].render(f"{int(self.dark.hp)} / 5000", True, (255, 190, 175)), (80, 70))
-        hp = fonts["small"].render(f"{int(self.dummy.hp)} / 5000", True, GREY)
+        hp = fonts["small"].render(
+            f"{int(self.dummy.hp)} / {int(self.dummy.max_hp)}", True, GREY
+        )
         dst.blit(hp, (W - 80 - hp.get_width(), 70))
         title = fonts["tiny"].render("VIRA-LIQUID ARENA CONTROL", True, (190, 90, 95))
         dst.blit(title, (W / 2 - title.get_width() / 2, 18))

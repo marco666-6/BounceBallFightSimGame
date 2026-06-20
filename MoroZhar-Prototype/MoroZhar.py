@@ -453,7 +453,7 @@ class Battle:
                 base_angle = math.degrees(math.atan2(m.pos.y - d.pos.y, m.pos.x - d.pos.x))
                 d.punch_dir = Vec2(1, 0).rotate(base_angle + random.choice((-125, -75, 75, 125)))
                 self.sound.play("dummy_punch")
-                self.damage_moro(20)
+                self.damage_moro(255)
 
         forward = safe_normal(m.vel)
         in_breath_cone = distance < 430 and forward.dot(to_d) > math.cos(math.radians(28))
@@ -820,7 +820,9 @@ class Battle:
         name = fonts["name"].render("DUMMYBOT", True, (220, 225, 235))
         dst.blit(name, (W - 75 - name.get_width(), 13))
         dst.blit(fonts["small"].render(f"{int(self.moro.hp)} / 5000", True, (205, 235, 255)), (80, 70))
-        hp = fonts["small"].render(f"{int(self.dummy.hp)} / 5000", True, (225, 228, 235))
+        hp = fonts["small"].render(
+            f"{int(self.dummy.hp)} / {int(self.dummy.max_hp)}", True, (225, 228, 235)
+        )
         dst.blit(hp, (W - 80 - hp.get_width(), 70))
         cx = W // 2
         title = fonts["tiny"].render("ICE  //  HEAT PRESSURE", True, (140, 165, 210))

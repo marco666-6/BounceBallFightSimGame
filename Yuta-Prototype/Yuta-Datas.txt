@@ -2,16 +2,24 @@ Inspired by Yuta Okkotsu and Rika Orimoto from Jujutsu Kaisen.
 
 ============================================================
 CHARACTER 03: YUTA
-PROTOTYPE STATUS: NOT READY
+PROTOTYPE STATUS: COMPLETE
 ============================================================
 
 ROLE / THEME
 ------------------------------------------------------------
-
+Yuta is a fast cursed-energy duelist with a short-range katana, a contact
+iron-arm hit, an autonomous Rika summon, chain control, and a staged beam
+ultimate. He is built as a self-contained exhibition prototype against
+DummyBot, matching the current MoroZhar and DarkLord prototype format.
 
 Visual Identity:
-- 
-- 
+- Dark fighter core with bright pink cursed-energy accents.
+- Red-wrapped katana, reflective steel iron arm, and white slash after-images.
+- Rika is a large pale curse form with black lower body, long arms, claws,
+  angular monster face, and moving hair/tendril strips.
+- Chain Pull uses separate metallic oval links rather than a plain line.
+- Pure Love uses smoke reformation, charge rings, a very wide pink beam,
+  white inner beam lines, particles, and target-surface pink fire.
 
 
 FINALIZED PROTOTYPE STATS
@@ -34,13 +42,24 @@ Maximum Curse Energy: 750
 Starting Curse Energy: 0
 
 Gain rules:
-- 
-- 
+- Yuta gains Curse Energy when his direct attacks deal damage.
+- Katana Slash and Iron Arm Punch grant CE based on damage dealt.
+- Every Curse Energy gain event receives a flat +2.5 CE bonus.
+- Rika Claw grants 22.5 CE before Surge multiplication.
+- Pure Love beam hits grant 5 CE per hit.
+- Curse Energy Surge can multiply normal CE gain by tier.
+- After Rika has spawned and then dies, all of Yuta's Curse Energy gains are
+  multiplied by 3 until Rika is revived.
+- This death bonus does not activate during Rika's initial 10-second spawn
+  delay at the beginning of a round.
 
 Spend Priority:
-- 
-- 
-- 
+- Pure Love Blast spends 200 CE when its wall-bounce setup condition is met.
+- Curse Energy Surge spends 150, 250, 400, 500, or 600 CE when ready.
+- Surge tier selection uses the planned 50/50 highest-affordable vs next
+  lower affordable tier rule.
+- While Rika is dead after having spawned, automatic Curse Energy Surge is
+  held until Yuta has at least 500 CE, preserving energy for a revival tier.
 
 
 BASIC ATTACKS
@@ -50,29 +69,30 @@ same frame, Katana Slash resolves first because it is his primary weapon,
 then Iron Arm Punch may resolve if Yuta is also colliding with the target.
 
 Basic Attack 1: Katana Slash
-Range: Short range, approximately 130 pixels from Yuta's surface
-Interval: 0.45 seconds while an enemy is in range
-Damage: ? per successful slash
+Range: Short range, approximately 175 pixels from Yuta's surface
+Interval: 0.40 seconds while an enemy is in range
+Damage: 35 base damage per successful slash
 Attack Behavior:
-- Yuta pulls out his katana and slashes the enemy.
+- Yuta draws a red-wrapped katana slash arc over the enemy.
 - The attack does not require physical contact.
-- The Katana reaches toward the target and may alternate between left,
-  right, overhead, and crossing slash animations.
+- Slash animations alternate sides and spawn impact sparks.
+- Each successful hit heals Yuta for 25% of the basic attack damage dealt.
 - Basic attacks do not redirect or stop Yuta's movement.
-- At higher enhancement tiers, a single katana slash can generate an after-image follow-up strike 0.3 seconds later (referred to as a *Double Slash*), 
-  and at even higher tiers, a second after-image strike may occur another 0.3 seconds after the first after-image follow-up strike (referred to as a *Triple Slash*).
+- At higher enhancement tiers, Katana Slash can spawn after-image follow-up
+  hits at 0.3 second spacing.
 
 Basic Attack 2: Iron Arm Punch
 Range: Contact
-Interval: 0.5 seconds while colliding with an enemy
-Damage: ? per successful punch
+Interval: 0.45 seconds while colliding with an enemy
+Damage: 45 base damage per successful punch
 Behavior:
-- Yuta punch the enemy with his iron arm.
-- The attack does require physical contact.
-- The punch animation and concept are the same as MoroZhar’s punches, except for the different hand/arm design.
+- Yuta punches with a large reflective iron arm and fist.
+- The attack requires physical contact.
+- The animation follows the same readability style as MoroZhar's punch,
+  but with a steel prosthetic/armored design.
+- Each successful hit heals Yuta for 25% of the basic attack damage dealt.
 - Basic attacks do not redirect or stop Yuta's movement.
-- At higher enhancement tiers, an iron arm punch may apply an immobilize/stun effect on you for 2 seconds, 
-  and at even higher tiers, an Iron Arm punch may apply a Chain Pull effect, restricting the target’s movement to the chain’s range without preventing attacks or skill casting.
+- Higher Surge tiers can add Stun and Chain Pull.
 
 
 SKILL 1: CURSE ENERGY SURGE
@@ -81,113 +101,125 @@ Cooldown: 10 seconds after the active period ends
 Active Duration: 10 seconds
 Requirement: At least 150 Curse Energy
 Spend Rule:
-- When cast, Yuta consumes Curse Energy with a 50/50 chance between the highest affordable tier and the next highest affordable tier below it 
-  (600, 500, 400, 250, or 150); if no lower affordable tier exists, means he automatically uses the lowest affordable tier.
+- When cast, Yuta consumes Curse Energy with a 50/50 chance between the
+  highest affordable tier and the next highest affordable tier below it
+  (600, 500, 400, 250, or 150).
+- If no lower affordable tier exists, he uses the lowest affordable tier.
 - The tier is snapshotted for the full 10-second active period.
 - If cooldown is ready but Curse Energy is below 150, the skill waits.
 - Cooldown does not begin until the 10-second active period finishes.
 
-Tier 5: 
+Tier 5:
 - Cost: 150 Curse Energy
 - Basic attack damage multiplier: 1.25x
 - Curse energy gain multiplier: 1.25x
 - No extra control effect.
 
-Tier 4: 
+Tier 4:
 - Cost: 250 Curse Energy
 - Basic attack damage multiplier: 1.40x
 - Curse energy gain multiplier: 1.25x
 - Katana Slash has a 35% chance to trigger Double Slash.
-- Double Slash consists of the original Katana Slash and an after-image follow-up strike, 
-  with each hit dealing 1.40× the original Katana Slash's base damage (totaling 2.8× base damage if both hits connect).
-- Iron Arm Punch has a 25% chance to Immobilize the target for 2 seconds.
+- Double Slash consists of the original Katana Slash and an after-image
+  follow-up strike.
+- Iron Arm Punch has a 25% chance to immobilize/stun the target for 2 seconds.
 
 Tier 3:
 - Cost: 400 Curse Energy
 - Basic attack damage multiplier: 1.60x
 - Curse energy gain multiplier: 1.40x
 - Katana Slash has a 35% chance to trigger Triple Slash.
-- Triple Slash consists of the original Katana Slash, an after-image follow-up strike, and another after-image follow-up strike, 
-  with each hit dealing 1.60× the original Katana Slash's base damage (totaling 4.8× base damage if all hits connect).
-- Iron Arm Punch has a 35% chance to Stun the target for 3 seconds.
-- Stunned enemies show a dizzy/bird-style overhead indicator.
+- Triple Slash consists of the original Katana Slash and two after-image
+  follow-up strikes.
+- Iron Arm Punch has a 35% chance to stun the target for 3 seconds.
+- Stunned enemies show a rotating overhead dizzy indicator.
 
 Tier 2:
 - Cost: 500 Curse Energy
 - Basic attack damage multiplier: 1.60x
 - Curse energy gain multiplier: 1.50x
 - Every Katana Slash has a 100% chance to trigger Triple Slash.
-- Triple Slash consists of the original Katana Slash, an after-image follow-up strike, and another after-image follow-up strike, 
-  with each hit dealing 1.60× the original Katana Slash's base damage (totaling 4.8× base damage if all hits connect).
-- Iron Arm Punch has a 35% chance to Stun the target for 2 seconds and apply a Chain Pull for 5 seconds.
-- While chained, the enemy is pulled/held to approximately 130 pixels from Yuta's surface so Katana Slash can keep reaching them.
-- Chain Pull is a forced-position relation, not a full Stun by itself. If Stun expires while the chain remains, 
-  the enemy may still attack or cast if its own mechanics allow it, but normal movement cannot carry it farther than the chain length.
-- If Rika has died, revive Rika at half HP near Yuta after the 1.25-second curse-smoke reformation animation (If Rika is alive, doesn't heal).
-- Rika's saved cooldown state is preserved when revived. For example, if Pure Love had 7 seconds remaining when Rika died, 
-  it resumes from 7 seconds remaining after revival instead of resetting.
+- Iron Arm Punch has a 35% chance to stun the target for 2 seconds and apply
+  Chain Pull for 5 seconds.
+- Chain Pull holds the enemy near Yuta so Katana Slash can keep reaching them.
+- If Rika has died, revive Rika at half HP near Yuta after smoke reformation.
+- Rika's saved Pure Love cooldown state is preserved when revived.
 
 Tier 1:
 - Cost: 600 Curse Energy
 - Basic attack damage multiplier: 1.80x
 - Curse energy gain multiplier: 1.50x
 - Every Katana Slash has a 100% chance to trigger Triple Slash.
-- Triple Slash consists of the original Katana Slash, an after-image follow-up strike, and another after-image follow-up strike, 
-  with each hit dealing 1.80× the original Katana Slash's base damage (totaling 5.4× base damage if all hits connect).
-- Iron Arm Punch has a 45% chance to Stun the target for 3 seconds and apply a Chain Pull for 6 seconds.
-- While chained, the enemy is pulled/held to approximately 130 pixels from Yuta's surface so Katana Slash can keep reaching them.
-- Chain Pull is a forced-position relation, not a full Stun by itself. If Stun expires while the chain remains, 
-  the enemy may still attack or cast if its own mechanics allow it, but normal movement cannot carry it farther than the chain length.
+- Iron Arm Punch has a 45% chance to stun the target for 3 seconds and apply
+  Chain Pull for 6 seconds.
 - If Rika is alive, heal Rika to full HP.
-- If Rika has died, revive Rika at full HP near Yuta after the 1.25-second curse-smoke reformation animation.
-- Rika's saved cooldown state is preserved when revived. For example, if Pure Love had 7 seconds remaining when Rika died, 
-  it resumes from 7 seconds remaining after revival instead of resetting.
+- If Rika has died, revive Rika at full HP near Yuta after smoke reformation.
+- Rika's saved Pure Love cooldown state is preserved when revived.
 
 Finalized Presentation:
-- 
-- 
-- 
+- Surge creates a violet cursed-energy burst and ring around Yuta.
+- HUD displays active tier and duration.
+- The 13 supplied sound effects are mapped and used directly.
 
 
-SKILL 2: "PURE LOVE" BEAM BLAST
+SKILL 2: PURE LOVE BEAM BLAST
 ------------------------------------------------------------
-Cooldown: 20 seconds after cast
+Cooldown: 30 seconds after cast
 
 Requirements:
 - At least 200 Curse Energy
 - Rika has to be alive
-- 
-- 
+- Yuta must wall-bounce while the cooldown is ready
+- Yuta must not already be locked in another staged action
 
 Cost: 200 Curse Energy
 
-Range / Area: Just like MoroZhar’s Heat Vision. Straight beam that travels until colliding with the arena wall (doesn't stop on enemy like MoroZhar’s), and is 3 times wider than MoroZhar's Heat Vision.
+Range / Area:
+- Straight horizontal beam from the nearest arena side to the opposite wall.
+- The beam stops at the arena wall and does not stop on enemy contact.
+- The beam is intentionally very wide, approximately triple MoroZhar's
+  Heat Vision visual width.
 
 Cast Rules:
-- Activation: When the cooldown is ready, Rika is alive, and Yuta has sufficient Curse Energy, if Yuta does a wall-bounce, Rika disappears using a 1.25-second reverse curse-smoke reformation animation. 
-  On that same bounce, Yuta is redirected to the vertical center of the nearest arena edge (far left or far right) and enters a standing state (not moving and stays there).
-- Setup & Charge: Once Yuta reaches the position, Rika reforms directly in front of him with a 1.25-second curse-smoke reformation animation. Yuta and Rika then begin charging together for 1.5 seconds.
-- Pure Love Blast: After charging, they unleash “Pure Love”, a beam attack lasting 7 seconds. Once the attack ends, Rika disappears again using the reverse curse-smoke reformation animation 
-  and returns to the location she was teleported from, while Yuta resumes movement from his standing position in a random direction.
-- 
-- 
+- Activation: On a valid wall-bounce, Rika disappears using smoke while Yuta
+  is redirected to the vertical center of the nearest left or right edge.
+- Setup: Rika reforms directly in front of Yuta after 1.25 seconds.
+- Charge: Yuta and Rika charge together for 1.5 seconds.
+- Blast: Pure Love fires for 7 seconds.
+- Rika remains a collidable body while manifested during the charge and blast
+  phases.
+- Rika is immune to damage during Pure Love charge and blast. Enemy hits on
+  Rika create a pink shield-pop ripple instead of reducing her HP.
+- Recovery: Rika disappears in smoke, returns to the location she was
+  teleported from, reforms, and Yuta resumes movement in a random direction.
 
 Beam Effects:
 - Damage: 40 per hit
 - Damage Interval: 0.25 seconds
-- Each successful Pure Love beam hit heals Yuta for 10 HP, up to maximum HP.
-- Each successful Pure Love beam hit collects for Yuta curse energy for 2.5 CE, up to maximum CE.
+- Each successful beam hit heals Yuta for 10 HP, up to maximum HP.
+- Each successful beam hit grants Yuta 2.5 CE, up to maximum CE.
 
 Aim / Collision Behavior:
-- Does not auto-aims toward the target it just aims straight to the left or right side depends on where his standing point is,
-  hoping an enemy would step into the beam area.
-- Doesn't stops exactly at the target surface when it hits, it just makes the hit enemy surface looks like it is catching on pink fire and particles.
-- Stops exactly at the arena wall, misses or not.
+- Does not auto-aim.
+- Fires straight left or right depending on Yuta's standing edge.
+- Does not stop at target contact.
+- Hit enemies show pink fire and beam particles.
 - Never passes through arena walls.
+- The beam is a cone/funnel. It starts as a narrow point at a charge ball in
+  front of Rika and widens until it spans the full opposite wall.
+- Enemies inside the cone are steadily pushed toward the far wall while they
+  remain inside the beam.
+- Yuta stays stationed behind Rika during the Pure Love sequence.
+- While stationed behind Rika, Yuta can still use Katana Slash or Iron Arm
+  Punch during Pure Love charge and blast if the enemy reaches him and is
+  outside the beam cone.
 
 Finalized Presentation:
-- 
-- 
+- Rika reforms in front of Yuta with pale smoke.
+- Charge phase uses a visible curse-energy charge ball, pink rings, smoke,
+  inward particles, and pink electricity.
+- Blast phase uses a triangular/funnel beam with jagged pink electric edges,
+  white inner streaks, smoke, particles, and pink fire-on-hit visuals.
 
 
 PASSIVE / SUMMON: RIKA
@@ -195,43 +227,55 @@ PASSIVE / SUMMON: RIKA
 Spawn Delay: 10 seconds after round start
 Spawn Position: Near Yuta, offset away from the nearest wall when possible
 Size: Approximately 2x a normal fighter body
-HP: 500
+HP: 450
 Movement Speed: Medium-Fast, approximately 280 pixels per second
 Movement Behavior:
 - Constant-speed DVD-style movement, same baseline style as characters.
 - Does not naturally chase enemies.
 - Wall and fighter collisions preserve movement speed.
+- Every Rika wall bounce redirects her toward the nearest hostile body.
+- If an enemy summon is closer than its owner, Rika redirects to that summon.
+- This redirect preserves Rika's current speed and adds no speed boost.
 - Rika never attacks Yuta.
-- Rika can be damaged by enemies and enemy area effects unless the effect
-  explicitly only targets fighters.
-- Rika's HP bar is a thin bar above her head/body and should not consume
-  much screen space.
+- Rika can be damaged by DummyBot's contact punch.
+- Rika's HP bar is a thin bar above her body.
 
 Rika Basic Attacks: Claw/Scratch
-Range: Contact
-Interval: 0.5 seconds while colliding with an enemy
-Damage: ? per successful hit
+Range: Short range, approximately 145 pixels from Rika's surface
+Interval: 0.5 seconds while an enemy is in range
+Damage: 30 per successful hit
 
 Effects:
-- Each successful Claw/Scratch grants Yuta +? Curse Energy.
-- Claw/Scratch uses long sweeping arm arcs, dark-nail monster arm swipe.
-- 
-- 
+- Each successful Claw/Scratch grants Yuta +22.5 CE before Surge multiplication.
+- Each successful Claw/Scratch heals Rika for 15 HP, half of her base claw
+  damage, up to her maximum HP.
+- Claw/Scratch moves Rika's arms/hands toward the enemy and draws animated
+  scratch marks over the target.
+- Rika's body has animated hair/tendrils and long monster arms.
 
-Rika Passive: For now none
-- 
-- 
+Rika Passive:
+- Summoning Rika is Yuta's character passive.
+- As long as Rika is alive, every second Yuta wall bounce redirects Yuta
+  toward the nearest hostile body.
+- If an enemy summon is closer than its owner, Yuta redirects to that summon.
+- Yuta and Rika wall redirects preserve current speed and add no speed boost.
+- If Rika dies after spawning, Yuta gains Curse Energy at 3x speed and will
+  reserve at least 500 CE before automatically casting Curse Energy Surge.
+- The 3x gain ends immediately when Rika is revived.
+- Rika can be revived or restored by high-tier Curse Energy Surge.
+- Pure Love temporarily relocates Rika but preserves her current HP.
 
 Finalized Presentation:
-- 
-- 
-- 
-
+- Pale monster torso, black tail/lower body, long arms, claws, open mouth,
+  teeth, and moving hair/tendril strips.
+- Spawn/revive/teleport-in use smoke and a growth-from-small reformation.
+- Death/teleport-out use smoke, floor-sink, shrink, and melt-style collapse.
 
 
 MULTI-ENEMY TARGETING / LOCK-ON PLAN
 ------------------------------------------------------------
-This is the planned mechanism for the future shared engine when there are summons exist.
+This is the planned mechanism for the future shared engine when there are
+summons.
 
 Definitions:
 - A "combatant" is a damageable character body.
@@ -240,9 +284,10 @@ Definitions:
 - Fighters and summons never target their own owner group.
 
 Threat Target Selection:
-- 
-- 
-- 
+- Prefer the enemy combatant unless a summon is closer and is allowed to be
+  damaged by the current action.
+- Basic attacks can use nearest valid hostile body.
+- Major staged skills may snapshot the combatant target or arena direction.
 
 Lock Strength:
 - Soft Lock: Normal target preference for basic attacks, beams, and copied
@@ -255,9 +300,9 @@ Lock Strength:
   the skill specifically says it homes or auto-aims.
 
 Yuta / Rika Targeting:
-- 
-- 
-- 
+- Yuta and Rika are the same owner group.
+- Rika never targets or damages Yuta.
+- Chain Pull is a Hard Lock while active.
 
 
 STATUS DEFINITIONS
@@ -275,6 +320,7 @@ Immobilize:
 Chain Pull:
 - Prevents the chained target from moving farther than the chain length
   from Yuta.
+- Current chain length: approximately 120 pixels between body surfaces.
 - Does not automatically prevent attacking or casting.
 - Counts as a Hard Lock while active.
 
@@ -282,29 +328,39 @@ Chain Pull:
 FINALIZED AUDIO
 ------------------------------------------------------------
 The 13 supplied sounds are implemented and mapped to the prototype:
-- Yuta-KatanaSlash.mp3
-- Yuta-KatanaDoubleSlash.mp3
-- Yuta-KatanaTripleSlash.mp3
-- Yuta-IronArmPunch.mp3
-- Yuta-CurseEnergySurge.mp3
-- Yuta-ChainAttach.mp3
-- Yuta-ChainPull.mp3
-- Yuta-StunProcDizzy.mp3
-- Yuta-RikaSpawnAndRevive.mp3
-- Yuta-RikaClaw.mp3
-- Yuta-RikaDeath.mp3
-- Yuta-PureLoveBlast.mp3
-- Yuta-PureLoveBlastCharge.mp3
+- Yuta-KatanaSlash.mp3: primary Katana Slash
+- Yuta-KatanaDoubleSlash.mp3: after-image follow-up slash variant
+- Yuta-KatanaTripleSlash.mp3: after-image follow-up slash variant
+- Yuta-IronArmPunch.mp3: iron-arm contact hit
+- Yuta-CurseEnergySurge.mp3: Curse Energy Surge activation
+- Yuta-ChainAttach.mp3: Chain Pull attach
+- Yuta-ChainPull.mp3: Chain Pull tension/pull
+- Yuta-StunProcDizzy.mp3: stun/immobilize proc
+- Yuta-RikaSpawnAndRevive.mp3: Rika spawn, revive, and return
+- Yuta-RikaClaw.mp3: Rika claw hit
+- Yuta-RikaDeath.mp3: Rika death/dispersal
+- Yuta-PureLoveBlast.mp3: Pure Love beam firing
+- Yuta-PureLoveBlastCharge.mp3: Pure Love charge phase
 
 
 COMPLETED PROTOTYPE SYSTEMS
 ------------------------------------------------------------
-- 
-- 
-- 
+- Standalone Yuta exhibition battle in Yuta-Prototype/Yuta.py.
+- Katana Slash with after-image Double Slash and Triple Slash follow-ups.
+- Iron Arm Punch with steel-arm animation and Surge-tier control effects.
+- Curse Energy resource, gain, spend, surge tiering, and HUD display.
+- Chain Pull with visible metallic chain links and forced distance limit.
+- Rika summon, HP bar, movement, damage handling, death, revive, and claw.
+- Pure Love staged setup, charge, beam, recovery, healing, and CE gain.
+- All 13 Yuta sound effects loaded and mapped.
+- Prototype preview screenshots generated:
+  Yuta-Prototype/prototype-preview.png
+  Yuta-Prototype/pure-love-preview.png
 
 Prototype Notes:
 --------------------------------------------------------------
-- 
-- 
-- 
+- This prototype intentionally does not modify Prototype-Shared, the arena,
+  DummyBot, MoroZhar, DarkLord, or tournament settings.
+- Tournament adapter integration is still future work; current main.py only
+  adapts MoroZhar and DarkLord even though Yuta is exhibition-complete.
+- Balance numbers are tuned for a flashy prototype, not final tournament play.

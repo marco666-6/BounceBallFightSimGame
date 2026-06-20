@@ -84,8 +84,12 @@ Vira Stacks:
 Vira Eruption:
 - All active Vira-Liquid pools harden at the same time and burst long,
   red-edged spikes outward from their irregular edges.
-- Initial Eruption Damage: 145 to an enemy touching a pool when it erupts
-- Hardened Spike Contact Damage: 37 every 0.5 seconds
+- Initial Eruption Damage: 145 to a fighter touching a pool when it erupts
+- Summon Eruption Damage: 45 to Rika or future summon entities in tournament
+  summon-targeting mode
+- Hardened Spike Contact Damage: 37 every 0.5 seconds against fighters
+- Summon Hardened Spike Contact Damage: 12 every 0.5 seconds against Rika
+  or future summon entities in tournament summon-targeting mode
 - Each successful hardened spike damage tick heals DarkLord by half of
   the spike damage dealt, up to maximum HP.
 - Hardened Duration: 7.25 seconds

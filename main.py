@@ -27,6 +27,8 @@ ICE_WHITE = (220, 250, 255)
 HEAT = (255, 75, 34)
 RED = (242, 43, 31)
 HOT_RED = (255, 82, 45)
+PINK = (255, 92, 185)
+PINK_HOT = (255, 39, 156)
 GOLD = (255, 205, 92)
 GREY = (185, 190, 205)
 SETTINGS = json.loads((ROOT / "tournament-settings.json").read_text(encoding="utf-8"))
@@ -50,6 +52,7 @@ def load_module(name, path):
 
 MORO = load_module("tournament_morozhar", ROOT / "MoroZhar-Prototype" / "MoroZhar.py")
 DARK = load_module("tournament_darklord", ROOT / "DarkLord-Prototype" / "DarkLord.py")
+YUTA = load_module("tournament_yuta", ROOT / "Yuta-Prototype" / "Yuta.py")
 
 
 def discover_eligible():
@@ -121,6 +124,7 @@ class FighterSlot:
     target: TournamentTarget
     accent: tuple
     status: StatusState = field(default_factory=StatusState)
+    target_entity: object = None
     tournament_wins: int = 0
 
     @property
@@ -162,35 +166,98 @@ def make_slot(key, side, muted):
         controller.dummy = target
         controller.round_over = 0
         return FighterSlot(key, "DARKLORD", controller, controller.dark, target, RED)
+    if key == "YUTA":
+        controller = YUTA.Battle(muted)
+        controller.yuta.pos = pos
+        randomize_opening_direction(controller.yuta, side)
+        target = TournamentTarget(enemy_pos)
+        controller.dummy = target
+        controller.round_over = 0
+        return FighterSlot(key, "YUTA", controller, controller.yuta, target, PINK)
     raise ValueError(f"No tournament adapter exists for {key}")
 
 
-def copy_status_to_target(slot, enemy):
+def is_alive_entity(entity):
+    state = getattr(entity, "alive", True)
+    return state() if callable(state) else bool(state)
+
+
+def enemy_target_candidates(enemy):
+    candidates = [enemy.body]
+    if enemy.key == "YUTA" and enemy.controller.rika.alive:
+        candidates.append(enemy.controller.rika)
+    return [entity for entity in candidates if getattr(entity, "hp", 1) > 0 and is_alive_entity(entity)]
+
+
+def select_target_entity(slot, enemy):
+    candidates = enemy_target_candidates(enemy)
+    return min(candidates or [enemy.body], key=lambda entity: slot.body.pos.distance_squared_to(entity.pos))
+
+
+def copy_status_to_target(slot, enemy, entity=None):
+    entity = entity or enemy.body
     target, status = slot.target, enemy.status
-    target.pos = Vec2(enemy.body.pos)
-    target.vel = Vec2(enemy.body.vel)
-    target.radius = enemy.body.radius
-    target.hp = enemy.body.hp
-    target.max_hp = enemy.body.max_hp
-    target.facing = Vec2(enemy.body.facing)
-    target.hit_flash = getattr(enemy.body, "hit_flash", 0)
-    target.squash = getattr(enemy.body, "squash", 0)
-    for name in vars(status):
-        setattr(target, name, getattr(status, name))
+    target.pos = Vec2(entity.pos)
+    target.vel = Vec2(getattr(entity, "vel", Vec2()))
+    target.radius = entity.radius
+    target.hp = entity.hp
+    target.max_hp = entity.max_hp
+    target.facing = Vec2(getattr(entity, "facing", safe_normal(target.vel, Vec2(1, 0))))
+    target.hit_flash = getattr(entity, "hit_flash", 0)
+    target.squash = getattr(entity, "squash", 0)
+    if entity is enemy.body:
+        for name in vars(status):
+            setattr(target, name, getattr(status, name))
+    else:
+        for name in vars(status):
+            setattr(target, name, 0 if isinstance(getattr(status, name), (int, float)) else False)
     target.punch_timer = 999999
     target.redirect_timer = 999999
     target.redirects = 0
 
 
 def copy_target_to_enemy(slot, enemy):
+    entity = slot.target_entity or enemy.body
     target, status = slot.target, enemy.status
-    enemy.body.hp = target.hp
-    for name in vars(status):
-        setattr(status, name, getattr(target, name))
-    enemy.body.hit_flash = max(getattr(enemy.body, "hit_flash", 0), target.hit_flash)
-    enemy.body.squash = max(getattr(enemy.body, "squash", 0), target.squash)
-    if slot.key == "DARKLORD" and slot.body.mode == "stab":
-        enemy.body.pos = Vec2(target.pos)
+    yuta_forced_position = (
+        slot.key == "YUTA" and
+        (slot.controller.beam.phase == "blast" or slot.controller.chain.life > 0)
+    )
+    if entity is enemy.body:
+        enemy.body.hp = target.hp
+        if yuta_forced_position:
+            enemy.body.pos = Vec2(target.pos)
+            enemy.body.vel = Vec2(target.vel)
+        for name in vars(status):
+            setattr(status, name, getattr(target, name))
+        enemy.body.hit_flash = max(getattr(enemy.body, "hit_flash", 0), target.hit_flash)
+        enemy.body.squash = max(getattr(enemy.body, "squash", 0), target.squash)
+        if slot.key == "DARKLORD" and slot.body.mode == "stab":
+            enemy.body.pos = Vec2(target.pos)
+    elif enemy.key == "YUTA" and entity is enemy.controller.rika:
+        rika = enemy.controller.rika
+        if enemy.controller.beam.phase in {"charge", "blast"}:
+            if target.hp < rika.hp:
+                enemy.controller.shield_pops.append(YUTA.ShieldPop(Vec2(rika.pos)))
+                enemy.controller.text("SHIELDED", rika.pos + Vec2(0, -122), PINK)
+            target.hp = rika.hp
+        else:
+            rika.hp = max(0, target.hp)
+            if yuta_forced_position:
+                rika.pos = Vec2(target.pos)
+                rika.vel = Vec2(target.vel)
+            rika.hit_flash = max(rika.hit_flash, target.hit_flash)
+            rika.squash = max(rika.squash, target.squash)
+            if slot.key == "DARKLORD" and slot.body.mode == "stab":
+                rika.pos = Vec2(target.pos)
+            if rika.hp <= 0 and rika.alive:
+                rika.alive = False
+                rika.died_after_spawn = True
+                rika.despawning = 1.25
+                rika.saved_pure_love_cd = max(0, enemy.controller.yuta.pure_cd)
+                enemy.controller.sound.play("rika_death")
+                enemy.controller.text("RIKA DISPERSED", rika.pos + Vec2(0, -120), YUTA.RIKA_SKIN, True)
+                enemy.controller.rika_disappear_fx(rika.pos)
 
 
 def status_locked(slot):
@@ -198,7 +265,9 @@ def status_locked(slot):
 
 
 def deployed_motion_active(slot):
-    return slot.key == "DARKLORD" and slot.body.mode in {"portal", "dash", "stab"}
+    if slot.key == "DARKLORD" and slot.body.mode in {"portal", "dash", "stab"}:
+        return True
+    return slot.key == "YUTA" and bool(slot.controller.beam.phase)
 
 
 def position_locked(slot):
@@ -211,33 +280,82 @@ class Tournament:
         self.muted = muted
         self.round_time_limit = round_time or SETTINGS["round_time_seconds"]
         self.post_match_time = SETTINGS["post_match_seconds"]
-        self.first_to = SETTINGS["championship_first_to"]
-        self.eligible = [name for name, _ in discover_eligible() if name in {"MOROZHAR", "DARKLORD"}]
+        self.best_of = SETTINGS.get("series_best_of", 3)
+        self.first_to = self.best_of // 2 + 1
+        self.eligible = [name for name, _ in discover_eligible() if name in {"MOROZHAR", "DARKLORD", "YUTA"}]
         if len(self.eligible) < 2:
             raise RuntimeError("At least two completed tournament adapters are required.")
         self.match_number = 0
-        self.champion_wins = {name: 0 for name in self.eligible}
-        self.reset_scores_after_match = False
-        self.reset_match()
+        self.bracket_number = 0
+        self.series_number = 0
+        self.series_stage = ""
+        self.waiting = []
+        self.series_wins = {}
+        self.champion_name = ""
+        self.next_series = None
+        self.start_new_bracket()
 
-    def reset_match(self):
-        if self.reset_scores_after_match:
-            self.champion_wins = {name: 0 for name in self.eligible}
-            self.reset_scores_after_match = False
-        self.match_number += 1
+    def start_new_bracket(self):
+        self.bracket_number += 1
         order = self.eligible[:]
         random.shuffle(order)
-        self.left = make_slot(order[0], 0, self.muted)
-        self.right = make_slot(order[1], 1, self.muted)
+        self.waiting = order[2:]
+        self.champion_name = ""
+        stage = "OPENING" if self.waiting else "FINAL"
+        self.start_series(order[0], order[1], stage)
+
+    def start_series(self, left_key, right_key, stage):
+        self.series_number += 1
+        self.series_stage = stage
+        self.left_key = left_key
+        self.right_key = right_key
+        self.series_wins = {left_key: 0, right_key: 0}
+        self.reset_round()
+
+    def reset_round(self):
+        self.match_number += 1
+        self.left = make_slot(self.left_key, 0, self.muted)
+        self.right = make_slot(self.right_key, 1, self.muted)
         self.time = 0
         self.round_time = self.round_time_limit
         self.round_over = 0
         self.winner = ""
         self.banner_time = 3
+        self.intro_time = 5
         self.shake = 0
 
+    def reset_match(self):
+        self.start_new_bracket()
+
+    def finish_round(self, winner):
+        self.series_wins[winner.key] += 1
+        score = f"{self.series_wins[self.left_key]}-{self.series_wins[self.right_key]}"
+        if self.series_wins[winner.key] >= self.first_to:
+            if self.waiting:
+                next_key = self.waiting.pop(0)
+                self.winner = f"{winner.name} TAKES SERIES {score}  //  NEXT: {next_key}"
+                self.round_over = self.post_match_time
+                self.next_series = (winner.key, next_key, "FINAL" if not self.waiting else "NEXT")
+            else:
+                self.champion_name = winner.key
+                self.winner = f"{winner.name} IS TOURNAMENT CHAMPION"
+                self.round_over = self.post_match_time
+                self.next_series = None
+        else:
+            self.winner = f"{winner.name} WINS ROUND  //  SERIES {score}"
+            self.round_over = self.post_match_time
+            self.next_series = "same"
+        self.shake = 18
+
     def update_slot(self, slot, enemy, dt):
-        copy_status_to_target(slot, enemy)
+        slot.target_entity = select_target_entity(slot, enemy)
+        slot.controller.target_is_summon = slot.target_entity is not enemy.body
+        copy_status_to_target(slot, enemy, slot.target_entity)
+        if slot.key == "YUTA":
+            enemy_summons = []
+            if enemy.key == "YUTA" and enemy.controller.rika.alive:
+                enemy_summons.append(enemy.controller.rika)
+            slot.controller.enemy_summons = enemy_summons
         existing_burn = slot.target.burned
         existing_burn_tick = slot.target.burn_tick
         # Burn damage is authoritative in the tournament engine, preventing
@@ -258,6 +376,7 @@ class Tournament:
         elif slot.status.slowed > 0:
             slot.body.pos = old_pos + (slot.body.pos - old_pos) * .25
         copy_target_to_enemy(slot, enemy)
+        slot.target_entity = None
         slot.controller.round_over = 0
 
     def update_statuses(self, dt):
@@ -294,7 +413,7 @@ class Tournament:
                 source = next((fighter for fighter in (self.left, self.right)
                                if fighter is not slot and fighter.key == "MOROZHAR"), None)
                 if source:
-                    copy_status_to_target(source, slot)
+                    copy_status_to_target(source, slot, slot.body)
                     source.controller.warn_ice_break()
                 status.ice_break_warned = True
             if frozen_before > 0 and status.frozen <= 0:
@@ -324,11 +443,22 @@ class Tournament:
         if self.round_over:
             self.round_over -= dt
             if self.round_over <= 0:
-                self.reset_match()
+                if self.champion_name:
+                    self.start_new_bracket()
+                elif self.next_series == "same":
+                    self.reset_round()
+                elif self.next_series:
+                    left_key, right_key, stage = self.next_series
+                    self.start_series(left_key, right_key, stage)
+                else:
+                    self.start_new_bracket()
             return
         self.time += dt
-        self.round_time -= dt
         self.banner_time -= dt
+        if self.intro_time > 0:
+            self.intro_time -= dt
+            return
+        self.round_time -= dt
         self.update_statuses(dt)
         self.update_slot(self.left, self.right, dt)
         self.update_slot(self.right, self.left, dt)
@@ -338,13 +468,7 @@ class Tournament:
                 winner = random.choice((self.left, self.right))
             else:
                 winner = self.left if self.left.hp > self.right.hp else self.right
-            self.winner = f"{winner.name} WINS MATCH {self.match_number}"
-            self.champion_wins[winner.name] += 1
-            if self.champion_wins[winner.name] >= self.first_to:
-                self.winner = f"{winner.name} IS TOURNAMENT CHAMPION"
-                self.reset_scores_after_match = True
-            self.round_over = self.post_match_time
-            self.shake = 18
+            self.finish_round(winner)
 
     def draw_dark_effects(self, slot, dst, offset):
         slot.controller.draw_world_effects(dst, offset)
@@ -352,10 +476,28 @@ class Tournament:
     def draw_moro_effects(self, slot, dst, offset):
         slot.controller.draw_world_effects(dst, offset)
 
+    def draw_yuta_effects(self, slot, dst, offset):
+        c = slot.controller
+        c.draw_chain(dst, offset)
+        c.draw_beam(dst, offset)
+        for particle in c.particles:
+            particle.draw(dst, offset)
+        c.draw_rika(dst, offset)
+        c.draw_shield_pops(dst, offset)
+
     def draw_fighter(self, slot, dst, offset):
         if slot.key == "DARKLORD":
             if not slot.body.hidden:
                 slot.controller.draw_ball(dst, slot.body, offset, True)
+        elif slot.key == "YUTA":
+            c = slot.controller
+            c.draw_surge_aura(dst, offset)
+            shared.draw_ball(
+                dst, slot.body.pos + offset, slot.body.radius,
+                (26, 30, 42), PINK,
+                slot.body.facing, slot.body.roll, slot.body.squash, slot.body.hit_flash,
+                0, 0, YUTA.WHITE, c.draw_yuta_decor,
+            )
         else:
             slot.controller.draw_character_aura(dst, offset)
             slot.controller.draw_ball(dst, slot.body.pos + offset, slot.body.radius, (28, 85, 130), (185, 235, 255),
@@ -368,6 +510,11 @@ class Tournament:
                 c.draw_portal(dst, portal, offset)
             c.draw_fire_cast(dst, offset)
             c.draw_blades(dst, offset)
+        elif slot.key == "YUTA":
+            c.draw_slashes(dst, offset)
+            c.draw_iron_arm(dst, offset)
+            if c.rika.alive and c.rika.claw_anim > 0:
+                c.draw_rika_claw(dst, offset)
         else:
             c.draw_punch_hand(dst, offset)
             color = {"PUNCH": GREY, "ICE PUNCH": ICE, "HEAT PUNCH": HEAT}[c.moro.next_punch]
@@ -436,22 +583,85 @@ class Tournament:
         dst.blit(self.fonts["small"].render(f"{int(self.left.hp)} / {int(self.left.max_hp)}", True, ICE_WHITE), (80, 70))
         hp = self.fonts["small"].render(f"{int(self.right.hp)} / {int(self.right.max_hp)}", True, ICE_WHITE)
         dst.blit(hp, (W - 80 - hp.get_width(), 70))
-        center = self.fonts["small"].render(f"TOURNAMENT MATCH {self.match_number}  //  {max(0, self.round_time):05.1f}s",
+        center = self.fonts["small"].render(
+            f"BRACKET {self.bracket_number}  {self.series_stage} SERIES  //  ROUND {self.match_number}  //  {max(0, self.round_time):05.1f}s",
                                             True, GOLD)
         dst.blit(center, (W / 2 - center.get_width() / 2, 18))
-        score = f"FIRST TO {self.first_to}   " + "   ".join(f"{name}: {wins}" for name, wins in self.champion_wins.items())
+        score = (
+            f"BEST OF {self.best_of}   {self.left_key}: {self.series_wins.get(self.left_key, 0)}"
+            f"   {self.right_key}: {self.series_wins.get(self.right_key, 0)}"
+        )
+        if self.waiting:
+            score += f"   WAITING: {', '.join(self.waiting)}"
         score_img = self.fonts["tiny"].render(score, True, (150, 170, 205))
         dst.blit(score_img, (W / 2 - score_img.get_width() / 2, 76))
         details = []
         for slot, enemy in ((self.left, self.right), (self.right, self.left)):
             if slot.key == "DARKLORD":
                 details.append(f"{slot.name} VIRA {slot.body.stacks}/10")
+            elif slot.key == "YUTA":
+                rika = "RIKA UP" if slot.controller.rika.alive else "RIKA DOWN"
+                details.append(f"{slot.name} CE {int(slot.body.ce)}/750 {rika}")
             else:
                 details.append(f"{slot.name} TARGET ICE {enemy.status.ice_stacks}/3 HEAT {enemy.status.heat_stacks}/3")
         detail_img = self.fonts["tiny"].render("    ".join(details), True, (175, 190, 220))
         dst.blit(detail_img, (W / 2 - detail_img.get_width() / 2, 94))
         info = self.fonts["tiny"].render("R  NEW MATCH     M  MUTE     ESC  EXIT", True, (105, 125, 160))
         dst.blit(info, (W - 82 - info.get_width(), H - 40))
+
+    def draw_intro_card(self, dst):
+        if self.intro_time <= 0:
+            return
+        veil = pygame.Surface((W, H), pygame.SRCALPHA)
+        veil.fill((2, 4, 12, 205))
+        dst.blit(veil, (0, 0))
+
+        t = self.time
+        card = pygame.Rect(W // 2 - 390, H // 2 - 155, 780, 310)
+        panel = pygame.Surface((card.width, card.height), pygame.SRCALPHA)
+        pygame.draw.rect(panel, (8, 11, 24, 238), panel.get_rect(), border_radius=18)
+        pygame.draw.rect(panel, (80, 95, 135, 180), panel.get_rect(), 2, border_radius=18)
+        for i in range(7):
+            alpha = 35 - i * 4
+            pygame.draw.rect(panel, (*self.left.accent, alpha),
+                             pygame.Rect(18 + i * 5, 18 + i * 5, 210, card.height - 36 - i * 10),
+                             2, border_radius=16)
+            pygame.draw.rect(panel, (*self.right.accent, alpha),
+                             pygame.Rect(card.width - 228 - i * 5, 18 + i * 5, 210, card.height - 36 - i * 10),
+                             2, border_radius=16)
+        dst.blit(panel, card.topleft)
+
+        left_center = Vec2(card.left + 165, card.centery + math.sin(t * 2.2) * 7)
+        right_center = Vec2(card.right - 165, card.centery + math.sin(t * 2.2 + math.pi) * 7)
+        for slot, center, flip in ((self.left, left_center, 1), (self.right, right_center, -1)):
+            glow = pygame.Surface((W, H), pygame.SRCALPHA)
+            for i in range(5, 0, -1):
+                pygame.draw.circle(glow, (*slot.accent, 8 + i * 7), center, 38 + i * 15)
+            dst.blit(glow, (0, 0), special_flags=pygame.BLEND_ADD)
+            fake = slot.body
+            facing = Vec2(flip, 0)
+            shared.draw_ball(
+                dst, center, 54,
+                (35, 45, 65) if slot.key != "DARKLORD" else (168, 23, 28),
+                slot.accent, facing, t * 2 * flip, .08 + math.sin(t * 6) * .025, 0,
+                0, 0, (255, 235, 245) if slot.key == "YUTA" else ICE_WHITE,
+            )
+            for i in range(3):
+                radius = 72 + i * 13 + math.sin(t * 4 + i) * 3
+                rect = pygame.Rect(center.x - radius, center.y - radius, radius * 2, radius * 2)
+                pygame.draw.arc(dst, (*slot.accent, 190 - i * 45), rect,
+                                t * (2.4 + i * .4) * flip, t * (2.4 + i * .4) * flip + math.pi * .9, 3)
+
+        vs = self.fonts["winner"].render("VS", True, GOLD)
+        dst.blit(vs, (W / 2 - vs.get_width() / 2, H / 2 - vs.get_height() / 2 - 8))
+        title = self.fonts["banner"].render(f"{self.series_stage}  //  BEST OF {self.best_of}", True, ICE_WHITE)
+        dst.blit(title, (W / 2 - title.get_width() / 2, card.top + 28))
+        left_name = self.fonts["name"].render(self.left.name, True, self.left.accent)
+        right_name = self.fonts["name"].render(self.right.name, True, self.right.accent)
+        dst.blit(left_name, (left_center.x - left_name.get_width() / 2, card.bottom - 68))
+        dst.blit(right_name, (right_center.x - right_name.get_width() / 2, card.bottom - 68))
+        count = self.fonts["impact"].render(f"FIGHT STARTS IN {max(0, self.intro_time):.1f}", True, (220, 230, 250))
+        dst.blit(count, (W / 2 - count.get_width() / 2, card.bottom - 37))
 
     def draw(self, dst, fonts):
         self.fonts = fonts
@@ -461,7 +671,12 @@ class Tournament:
         shared.draw_arena(dst, ARENA, W, H, self.time, offset)
         for slot in (self.left, self.right):
             shared.draw_movement_trail(dst, slot.body, slot.accent, offset, 5)
-            (self.draw_dark_effects if slot.key == "DARKLORD" else self.draw_moro_effects)(slot, dst, offset)
+            if slot.key == "DARKLORD":
+                self.draw_dark_effects(slot, dst, offset)
+            elif slot.key == "YUTA":
+                self.draw_yuta_effects(slot, dst, offset)
+            else:
+                self.draw_moro_effects(slot, dst, offset)
         self.draw_fighter(self.left, dst, offset)
         self.draw_fighter(self.right, dst, offset)
         self.draw_status_overlay(self.left, dst, offset)
@@ -469,7 +684,8 @@ class Tournament:
         self.draw_foreground(self.left, dst, offset)
         self.draw_foreground(self.right, dst, offset)
         self.draw_hud(dst)
-        if self.banner_time > 0:
+        self.draw_intro_card(dst)
+        if self.banner_time > 0 and self.intro_time <= 0:
             image = fonts["banner"].render(f"{self.left.name}  VS  {self.right.name}", True, ICE_WHITE)
             dst.blit(image, (W / 2 - image.get_width() / 2, H / 2 - 100))
         if self.round_over:
