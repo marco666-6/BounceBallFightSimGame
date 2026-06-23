@@ -1,5 +1,5 @@
 {
-  "eligible_statuses": ["COMPLETE", "FINISHED", "READY", "READY TO BUILD"],
+  "eligible_statuses": ["COMPLETE", "COMPLETE STANDALONE PYGAME PROTOTYPE", "FINISHED", "READY", "READY TO BUILD"],
   "excluded_characters": ["DUMMYBOT"],
   "round_time_seconds": 120,
   "post_match_seconds": 5,

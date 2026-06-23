@@ -31,11 +31,16 @@ PINK = (255, 92, 185)
 PINK_HOT = (255, 39, 156)
 GOLD = (255, 205, 92)
 GREY = (185, 190, 205)
+ORANGE = (255, 129, 31)
 SETTINGS = json.loads((ROOT / "tournament-settings.json").read_text(encoding="utf-8"))
 
 
 def clamp(value, low, high):
     return max(low, min(high, value))
+
+
+def lerp(a, b, t):
+    return a + (b - a) * t
 
 
 def safe_normal(vector, fallback=Vec2(1, 0)):
@@ -53,6 +58,7 @@ def load_module(name, path):
 MORO = load_module("tournament_morozhar", ROOT / "MoroZhar-Prototype" / "MoroZhar.py")
 DARK = load_module("tournament_darklord", ROOT / "DarkLord-Prototype" / "DarkLord.py")
 YUTA = load_module("tournament_yuta", ROOT / "Yuta-Prototype" / "Yuta.py")
+NARUTO = load_module("tournament_naruto", ROOT / "Naruto-Prototype" / "Naruto.py")
 
 
 def discover_eligible():
@@ -174,6 +180,14 @@ def make_slot(key, side, muted):
         controller.dummy = target
         controller.round_over = 0
         return FighterSlot(key, "YUTA", controller, controller.yuta, target, PINK)
+    if key == "NARUTO":
+        controller = NARUTO.Battle(muted)
+        controller.naruto.pos = pos
+        randomize_opening_direction(controller.naruto, side)
+        target = TournamentTarget(enemy_pos)
+        controller.dummy = target
+        controller.round_over = 0
+        return FighterSlot(key, "NARUTO", controller, controller.naruto, target, ORANGE)
     raise ValueError(f"No tournament adapter exists for {key}")
 
 
@@ -186,6 +200,8 @@ def enemy_target_candidates(enemy):
     candidates = [enemy.body]
     if enemy.key == "YUTA" and enemy.controller.rika.alive:
         candidates.append(enemy.controller.rika)
+    if enemy.key == "NARUTO":
+        candidates.extend(enemy.controller.active_clones())
     return [entity for entity in candidates if getattr(entity, "hp", 1) > 0 and is_alive_entity(entity)]
 
 
@@ -208,6 +224,16 @@ def copy_status_to_target(slot, enemy, entity=None):
     if entity is enemy.body:
         for name in vars(status):
             setattr(target, name, getattr(status, name))
+    elif enemy.key == "NARUTO" and hasattr(entity, "stunned"):
+        target.frozen = 0
+        target.slowed = 0
+        target.burned = 0
+        target.stunned = getattr(entity, "stunned", 0)
+        target.ice_stacks = 0
+        target.heat_stacks = 0
+        target.heat_decay_timer = 0
+        target.thermal_shock_locked = False
+        target.ice_break_warned = False
     else:
         for name in vars(status):
             setattr(target, name, 0 if isinstance(getattr(status, name), (int, float)) else False)
@@ -234,6 +260,21 @@ def copy_target_to_enemy(slot, enemy):
         enemy.body.squash = max(getattr(enemy.body, "squash", 0), target.squash)
         if slot.key == "DARKLORD" and slot.body.mode == "stab":
             enemy.body.pos = Vec2(target.pos)
+    elif enemy.key == "NARUTO" and entity in enemy.controller.active_clones():
+        clone = entity
+        clone.pos = Vec2(target.pos)
+        clone.vel = Vec2(target.vel)
+        clone.radius = target.radius
+        clone.facing = Vec2(target.facing)
+        clone.hit_flash = max(clone.hit_flash, target.hit_flash)
+        clone.squash = max(clone.squash, target.squash)
+        clone.stunned = max(getattr(clone, "stunned", 0), getattr(target, "stunned", 0))
+        clone.hp = max(0, target.hp)
+        if clone.hp <= 0 and clone.death_anim <= 0:
+            clone.death_anim = .55
+            enemy.controller.sound.play("clone_death")
+            enemy.controller.smoke(clone.pos, 20)
+            enemy.controller.text("POOF", clone.pos + Vec2(0, -76), ICE_WHITE)
     elif enemy.key == "YUTA" and entity is enemy.controller.rika:
         rika = enemy.controller.rika
         if enemy.controller.beam.phase in {"charge", "blast"}:
@@ -282,7 +323,7 @@ class Tournament:
         self.post_match_time = SETTINGS["post_match_seconds"]
         self.best_of = SETTINGS.get("series_best_of", 3)
         self.first_to = self.best_of // 2 + 1
-        self.eligible = [name for name, _ in discover_eligible() if name in {"MOROZHAR", "DARKLORD", "YUTA"}]
+        self.eligible = [name for name, _ in discover_eligible() if name in {"MOROZHAR", "DARKLORD", "YUTA", "NARUTO"}]
         if len(self.eligible) < 2:
             raise RuntimeError("At least two completed tournament adapters are required.")
         self.match_number = 0
@@ -350,12 +391,8 @@ class Tournament:
     def update_slot(self, slot, enemy, dt):
         slot.target_entity = select_target_entity(slot, enemy)
         slot.controller.target_is_summon = slot.target_entity is not enemy.body
+        slot.controller.enemy_summons = [entity for entity in enemy_target_candidates(enemy) if entity is not enemy.body]
         copy_status_to_target(slot, enemy, slot.target_entity)
-        if slot.key == "YUTA":
-            enemy_summons = []
-            if enemy.key == "YUTA" and enemy.controller.rika.alive:
-                enemy_summons.append(enemy.controller.rika)
-            slot.controller.enemy_summons = enemy_summons
         existing_burn = slot.target.burned
         existing_burn_tick = slot.target.burn_tick
         # Burn damage is authoritative in the tournament engine, preventing
@@ -485,6 +522,15 @@ class Tournament:
         c.draw_rika(dst, offset)
         c.draw_shield_pops(dst, offset)
 
+    def draw_naruto_effects(self, slot, dst, offset):
+        c = slot.controller
+        c.draw_wall_cracks(dst, offset)
+        for clone in c.active_clones():
+            shared.draw_movement_trail(dst, clone, ORANGE, offset, 3)
+        for particle in c.particles:
+            particle.draw(dst, offset)
+        c.draw_chakra_aura(dst, offset)
+
     def draw_fighter(self, slot, dst, offset):
         if slot.key == "DARKLORD":
             if not slot.body.hidden:
@@ -498,6 +544,30 @@ class Tournament:
                 slot.body.facing, slot.body.roll, slot.body.squash, slot.body.hit_flash,
                 0, 0, YUTA.WHITE, c.draw_yuta_decor,
             )
+        elif slot.key == "NARUTO":
+            c = slot.controller
+            for clone in c.active_clones():
+                scale = 1
+                if clone.spawn_anim > 0:
+                    scale = lerp(.45, 1, 1 - clone.spawn_anim / .34)
+                if clone.death_anim > 0:
+                    scale = clamp(clone.death_anim / .55, 0, 1)
+                radius = clone.radius * scale
+                shared.draw_ball(
+                    dst, clone.pos + offset, radius,
+                    (194, 108, 63), ORANGE,
+                    clone.facing, clone.roll, clone.squash, clone.hit_flash,
+                    0, 0, (255, 230, 175), c.draw_naruto_decor,
+                )
+                if clone.hp > 0:
+                    c.draw_clone_bar(dst, clone, offset)
+            shared.draw_ball(
+                dst, slot.body.pos + offset, slot.body.radius,
+                (218, 73, 18), GOLD,
+                slot.body.facing, slot.body.roll, slot.body.squash, slot.body.hit_flash,
+                0, 0, ICE_WHITE, c.draw_naruto_decor,
+            )
+            c.draw_rasengan_charge(dst, offset)
         else:
             slot.controller.draw_character_aura(dst, offset)
             slot.controller.draw_ball(dst, slot.body.pos + offset, slot.body.radius, (28, 85, 130), (185, 235, 255),
@@ -515,6 +585,12 @@ class Tournament:
             c.draw_iron_arm(dst, offset)
             if c.rika.alive and c.rika.claw_anim > 0:
                 c.draw_rika_claw(dst, offset)
+        elif slot.key == "NARUTO":
+            c.draw_fists(dst, offset)
+            c.draw_shuriken(dst, offset)
+            c.draw_rasengan_impacts(dst, offset)
+            c.draw_shields(dst, offset)
+            c.draw_status_icons(dst, offset)
         else:
             c.draw_punch_hand(dst, offset)
             color = {"PUNCH": GREY, "ICE PUNCH": ICE, "HEAT PUNCH": HEAT}[c.moro.next_punch]
@@ -602,6 +678,10 @@ class Tournament:
             elif slot.key == "YUTA":
                 rika = "RIKA UP" if slot.controller.rika.alive else "RIKA DOWN"
                 details.append(f"{slot.name} CE {int(slot.body.ce)}/750 {rika}")
+            elif slot.key == "NARUTO":
+                details.append(
+                    f"{slot.name} CHAKRA {int(slot.body.chakra)}/1000 CLONES {len(slot.controller.active_clones())}/6"
+                )
             else:
                 details.append(f"{slot.name} TARGET ICE {enemy.status.ice_stacks}/3 HEAT {enemy.status.heat_stacks}/3")
         detail_img = self.fonts["tiny"].render("    ".join(details), True, (175, 190, 220))
@@ -640,11 +720,15 @@ class Tournament:
             dst.blit(glow, (0, 0), special_flags=pygame.BLEND_ADD)
             fake = slot.body
             facing = Vec2(flip, 0)
+            decorate = None
+            if slot.key == "NARUTO":
+                decorate = slot.controller.draw_naruto_decor
             shared.draw_ball(
                 dst, center, 54,
                 (35, 45, 65) if slot.key != "DARKLORD" else (168, 23, 28),
                 slot.accent, facing, t * 2 * flip, .08 + math.sin(t * 6) * .025, 0,
                 0, 0, (255, 235, 245) if slot.key == "YUTA" else ICE_WHITE,
+                decorate,
             )
             for i in range(3):
                 radius = 72 + i * 13 + math.sin(t * 4 + i) * 3
@@ -675,6 +759,8 @@ class Tournament:
                 self.draw_dark_effects(slot, dst, offset)
             elif slot.key == "YUTA":
                 self.draw_yuta_effects(slot, dst, offset)
+            elif slot.key == "NARUTO":
+                self.draw_naruto_effects(slot, dst, offset)
             else:
                 self.draw_moro_effects(slot, dst, offset)
         self.draw_fighter(self.left, dst, offset)

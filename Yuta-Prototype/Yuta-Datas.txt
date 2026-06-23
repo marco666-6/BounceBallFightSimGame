@@ -227,7 +227,7 @@ PASSIVE / SUMMON: RIKA
 Spawn Delay: 10 seconds after round start
 Spawn Position: Near Yuta, offset away from the nearest wall when possible
 Size: Approximately 2x a normal fighter body
-HP: 450
+HP: 550
 Movement Speed: Medium-Fast, approximately 280 pixels per second
 Movement Behavior:
 - Constant-speed DVD-style movement, same baseline style as characters.
@@ -237,7 +237,7 @@ Movement Behavior:
 - If an enemy summon is closer than its owner, Rika redirects to that summon.
 - This redirect preserves Rika's current speed and adds no speed boost.
 - Rika never attacks Yuta.
-- Rika can be damaged by DummyBot's contact punch.
+- Rika can be damaged by any fighter or even DummyBot's contact punch.
 - Rika's HP bar is a thin bar above her body.
 
 Rika Basic Attacks: Claw/Scratch
@@ -361,6 +361,6 @@ Prototype Notes:
 --------------------------------------------------------------
 - This prototype intentionally does not modify Prototype-Shared, the arena,
   DummyBot, MoroZhar, DarkLord, or tournament settings.
-- Tournament adapter integration is still future work; current main.py only
-  adapts MoroZhar and DarkLord even though Yuta is exhibition-complete.
+- Tournament adapter integration now exists in main.py for MoroZhar,
+  DarkLord, Yuta, and Naruto.
 - Balance numbers are tuned for a flashy prototype, not final tournament play.

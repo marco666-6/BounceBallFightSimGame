@@ -70,6 +70,7 @@ Character controllers own:
 
 - MoroZhar
 - DarkLord
+- Naruto
 
 DummyBot remains a reusable prototype/testing target and is excluded from
 tournaments.

@@ -1,0 +1,274 @@
+Inspired by Naruto Uzumaki from Naruto Shippuden.
+
+============================================================
+CHARACTER 04: NARUTO
+PROTOTYPE STATUS: COMPLETE STANDALONE PYGAME PROTOTYPE
+============================================================
+
+Current implementation file:
+- Naruto-Prototype/Naruto.py
+
+Run command:
+- python Naruto-Prototype/Naruto.py
+
+Verified:
+- Headless 2-second screenshot run.
+- Headless 18-second screenshot run.
+- Local sound bank maps all 13 Naruto sound files.
+
+
+ROLE / THEME
+------------------------------------------------------------
+Naruto is a high-speed swarm and pressure fighter. He uses
+Kagebunshin No Jutsu to flood the arena with autonomous clones, keeps
+pressure active through close-range Ninja Punches and long-range
+Shuriken Throws, and threatens huge momentum swings with Rasengan.
+
+He is strongest when several clones are alive and bouncing around the
+arena. His Keikaku passive stops him in place, makes him invulnerable,
+and refills Chakra in visible timed pulses so he can afford clone waves
+and Rasengan again.
+
+Visual Identity:
+- Bright orange 3D ball with gold accent, headband plate, and whisker
+  marks.
+- Blue-white Chakra aura grows brighter as Chakra rises.
+- Clones are pale/desaturated orange Naruto copies with individual HP
+  bars.
+- Keikaku draws smooth inward-flowing Chakra particles with a small
+  pulsing blue-white aura around Naruto.
+- Rasengan draws a dense blue-white spinning sphere near Naruto's
+  forward side, then a heavy impact burst with spiral energy, smoke,
+  orange heat wisps, chakra shards, sparks, and screen shake.
+- Ninja Punch draws a large animated orange/chakra fist from a random
+  incoming direction.
+- Shuriken Throw creates visible spinning shuriken projectiles with
+  small metallic trails.
+
+
+FINALIZED PROTOTYPE STATS
+------------------------------------------------------------
+Prototype HP: 5000
+Prototype Opponent: DummyBot, 10000 HP
+Defense: Not separately implemented in this standalone prototype.
+Movement Speed: 350 pixels per second.
+Movement Behavior:
+- Constant-speed DVD-style movement.
+- Wall and fighter collisions preserve normal movement speed.
+- Naruto and his Clones physically collide and bounce off each other.
+- Naruto does not naturally chase the enemy.
+- Clones use DVD movement too, but every second wall bounce redirects
+  them toward DummyBot.
+- Skills, passives, projectile aim, and clone redirect logic are the
+  only mechanics that intentionally aim, stop, or alter movement.
+
+
+RESOURCE: CHAKRA
+------------------------------------------------------------
+Maximum Chakra: 1000
+Starting Chakra: 100
+
+Gain Rules:
+- Naruto's successful Ninja Punch grants Naruto 15 Chakra.
+- Naruto's successful Shuriken Throw grants Naruto 10 Chakra.
+- Clone attacks do not grant Naruto Chakra.
+- Keikaku grants 45 Chakra every 0.5 seconds during its 3-second
+  active period, for up to 270 Chakra total.
+- Chakra cannot exceed 1000.
+
+Spend Priority:
+1. Kagebunshin No Jutsu
+   - Cost: 300 Chakra.
+   - Highest priority when off cooldown and allowed by clone count.
+
+2. Rasengan
+   - Cost: 500 Chakra.
+   - Cast when off cooldown and Naruto has enough Chakra, but only
+     after Kagebunshin priority is checked.
+
+3. Keikaku
+   - No Chakra cost.
+   - Triggers automatically when off cooldown and Chakra is below max.
+   - If Chakra is already max when the check happens, the cooldown
+     restarts instead of wasting the passive.
+
+
+BASIC ATTACKS
+------------------------------------------------------------
+Basic Attack 1: Ninja Punch
+Range: 120 pixels beyond body contact.
+Interval: 0.20 seconds.
+Damage: 30 per hit.
+
+Implemented Behavior:
+- Fires when DummyBot is inside short range.
+- Creates a big animated fist from a randomized incoming direction.
+- Naruto gains 15 Chakra on his own successful punches.
+- The attacker heals for 45% of damage dealt.
+- Clones use half of Naruto's damage:
+  - Clone Ninja Punch: 15 damage
+  - Clone Shuriken Throw: 10 damage
+- Clone hits heal that clone and do not grant Naruto Chakra.
+- Clone healing automatically scales down because lifesteal is based on
+  damage dealt.
+
+Basic Attack 2: Shuriken Throw
+Range: 500 pixels beyond body contact.
+Interval: 0.40 seconds.
+Damage: 20 per hit.
+
+Implemented Behavior:
+- Fires only when DummyBot is outside Ninja Punch range but inside
+  Shuriken range.
+- Spawns a visible spinning shuriken projectile.
+- Projectile travels in a straight line to the snapshotted target
+  direction and does not home.
+- Projectile disappears when it hits DummyBot or leaves the arena.
+- Naruto gains 10 Chakra on his own successful shuriken hits.
+- The attacker heals for 45% of damage dealt.
+- Three throw sound variants are randomly selected.
+
+
+SKILL 1: KAGEBUNSHIN NO JUTSU
+------------------------------------------------------------
+Cooldown: 10 seconds.
+Requirement: 300 Chakra.
+Normal Cost: 300 Chakra.
+
+Clone Cap Rule:
+- Maximum active clones: 6.
+- Normal cast creates 3 clones.
+- If exactly 4 clones are alive, the cast creates 2 clones instead so
+  the cap is respected.
+- If 5 or 6 clones are alive and Naruto tries to cast, Chakra Fail
+  Control triggers instead.
+
+Chakra Fail Control:
+- Duration: 1.5 seconds.
+- Stuns Naruto and all active clones.
+- Does not spend Chakra.
+- Damages each active clone by 100 HP.
+- Kagebunshin cooldown begins after the stun ends.
+- Visuals: erratic blue-white sparks, big text label, and impact burst.
+
+Each Clone:
+- HP: 75.
+- Radius: same as Naruto.
+- Speed: 350 pixels per second.
+- Has its own thin HP bar.
+- Can be hit and killed by DummyBot contact punches.
+- Uses half-damage versions of Naruto's Ninja Punch and Shuriken Throw.
+- Cannot cast Kagebunshin, Rasengan, or Keikaku.
+- Does not gain or store Chakra.
+- On spawn: white smoke puff and grow-in animation.
+- On death: white smoke/poof effect and short disappearing body.
+
+
+SKILL 2: RASENGAN
+------------------------------------------------------------
+Cooldown: 7.5 seconds.
+Requirement: 500 Chakra.
+Cost: 500 Chakra.
+
+Charge Behavior:
+- Naruto begins a 0.6-second visual charge.
+- Naruto keeps moving during the charge.
+- After charge completes, Rasengan remains ready until Naruto collides
+  with DummyBot.
+- The skill uses natural body contact; it does not snap aim or dash.
+
+On Contact:
+- Damage: 120.
+- Creates a large blue-white spiral explosion.
+- Applies strong hit-stop and camera shake.
+- Applies massive knockback to DummyBot away from Naruto.
+- Knockback starts at about 1400 pixels per second and rapidly decays.
+- If DummyBot hits an arena wall during this forced knockback, DummyBot
+  is stunned for 2 seconds.
+- Wall impact plays its own sound and draws crack/burst visuals.
+
+
+PASSIVE: KEIKAKU (CHAKRA FILL)
+------------------------------------------------------------
+Cooldown: 6 seconds after the active period ends.
+Active Duration: 3 seconds.
+
+Trigger Condition:
+- Activates automatically when cooldown is ready and Naruto's Chakra
+  is below 1000.
+- If Chakra is already full, the cooldown restarts and Naruto remains
+  mobile.
+
+Active Period:
+- Naruto stops moving.
+- Naruto cannot use basic attacks, Kagebunshin, or Rasengan.
+- Naruto is invulnerable in the same way Rika is during Pure Love
+  Blast: collisions, attacks, and skills can still connect, but they
+  deal zero damage and create a Chakra shield ripple instead.
+- Every 0.5 seconds Naruto gains 45 Chakra, up to max.
+- The period always completes once it starts.
+
+Visuals:
+- Inward-flowing blue-white Chakra particles.
+- A small smooth blue-white circle aura around Naruto.
+- Floating CHAKRA FILL text.
+- Each gain tick creates a pulse burst, sparks, and a +Chakra label.
+
+
+IMPLEMENTED AUDIO
+------------------------------------------------------------
+All 13 Naruto sound files are present and mapped:
+- Naruto-NinjaPunch.mp3: Ninja Punch hit.
+- Naruto-ShurikenThrowOne.mp3: Shuriken throw variant 1.
+- Naruto-ShurikenThrowTwo.mp3: Shuriken throw variant 2.
+- Naruto-ShurikenThrowThree.mp3: Shuriken throw variant 3.
+- Naruto-ShurikenHit.mp3: Shuriken impact on DummyBot.
+- Naruto-Kagebunshin.mp3: Kagebunshin cast and clone spawn.
+- Naruto-CloneDeath.mp3: Clone death/poof.
+- Naruto-ChakraFailControl.mp3: Chakra Fail Control stagger.
+- Naruto-Rasengan-Charge.mp3: Rasengan charge begins.
+- Naruto-Rasengan-Impact.mp3: Rasengan body impact.
+- Naruto-Rasengan-WallHit.mp3: Rasengan knockback wall impact.
+- Naruto-KeikakuStart.mp3: Keikaku begins.
+- Naruto-KeikakuTick.mp3: Keikaku Chakra gain tick.
+
+
+COMPLETED PROTOTYPE SYSTEMS
+------------------------------------------------------------
+- Standalone Pygame prototype entry point.
+- Shared arena and shared ball rendering are reused unchanged.
+- Naruto HP/chakra HUD.
+- Clone counter HUD.
+- Cooldown HUD for Kagebunshin, Rasengan, and Keikaku.
+- Naruto DVD movement.
+- DummyBot movement/collision/punch interaction.
+- Naruto Ninja Punch with random incoming fist animation.
+- Naruto Shuriken Throw projectiles with spin and trails.
+- Naruto Chakra gain and max clamp.
+- Naruto lifesteal on basic attacks.
+- Kagebunshin clone spawn, cap, exact-4 exception, and fail-control
+  punishment.
+- Clone movement, wall redirect, basic attacks, lifesteal, HP bars,
+  spawn effect, and death effect.
+- Rasengan charge, ready state, contact trigger, impact damage,
+  knockback, wall stun, wall crack, and camera shake.
+- Keikaku auto-trigger, invulnerability, no-action lock, timed Chakra
+  gain, shield ripple, and resume movement.
+- Floating combat text and status labels.
+- Headless screenshot support.
+- Mute toggle and restart controls.
+
+
+PROTOTYPE NOTES
+------------------------------------------------------------
+- Combat is fully autonomous.
+- This prototype intentionally targets DummyBot only. The future
+  tournament adapter should replace target lookup with shared hostile
+  body selection for enemy summons and multi-combatant cases.
+- Clones currently collide with Naruto, one another, and DummyBot to
+  keep the swarm physically readable.
+- Rasengan contact is body collision based, matching the intended
+  natural DVD-movement requirement.
+- Keikaku invulnerability is implemented locally as zero incoming
+  damage plus shield ripple feedback.
+- The shared arena and shared prototype helpers were not modified.

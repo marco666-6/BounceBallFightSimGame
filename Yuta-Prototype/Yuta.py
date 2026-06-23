@@ -226,8 +226,8 @@ class Rika:
     pos: Vec2
     vel: Vec2 = field(default_factory=lambda: Vec2(180, -215))
     radius: float = 84
-    hp: float = 450
-    max_hp: float = 450
+    hp: float = 550
+    max_hp: float = 550
     alive: bool = False
     spawn_timer: float = 10
     reforming: float = 0
