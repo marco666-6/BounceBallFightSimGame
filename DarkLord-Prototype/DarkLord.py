@@ -340,7 +340,11 @@ class Battle:
         d.mode, d.mode_timer, d.stab_anim = "stab", 1, 1
         d.vel = Vec2()
         self.dummy.stunned = 2
-        self.lock_offset = self.dummy.pos - d.pos
+        locked_pos = Vec2(
+            clamp(self.dummy.pos.x, ARENA.left + self.dummy.radius, ARENA.right - self.dummy.radius),
+            clamp(self.dummy.pos.y, ARENA.top + self.dummy.radius, ARENA.bottom - self.dummy.radius),
+        )
+        self.lock_offset = locked_pos - d.pos
         self.sound.play("stab")
         self.damage_dummy(217, "DOUBLE STAB", 4)
         healed = min(100, d.max_hp - d.hp)
@@ -425,6 +429,8 @@ class Battle:
                 self.emerge()
         elif d.mode == "stab":
             bot.pos = d.pos + self.lock_offset
+            bot.pos.x = clamp(bot.pos.x, ARENA.left + bot.radius, ARENA.right - bot.radius)
+            bot.pos.y = clamp(bot.pos.y, ARENA.top + bot.radius, ARENA.bottom - bot.radius)
             if d.mode_timer <= 0:
                 d.mode = "normal"
                 d.vel = safe_normal(self.lock_offset, Vec2(1, 0)).rotate(130) * 350

@@ -131,6 +131,7 @@ class FighterSlot:
     accent: tuple
     status: StatusState = field(default_factory=StatusState)
     target_entity: object = None
+    locked_target_entity: object = None
     tournament_wins: int = 0
 
     @property
@@ -196,6 +197,10 @@ def is_alive_entity(entity):
     return state() if callable(state) else bool(state)
 
 
+def entity_active(entity):
+    return entity is not None and getattr(entity, "hp", 1) > 0 and is_alive_entity(entity)
+
+
 def enemy_target_candidates(enemy):
     candidates = [enemy.body]
     if enemy.key == "YUTA" and enemy.controller.rika.alive:
@@ -203,6 +208,39 @@ def enemy_target_candidates(enemy):
     if enemy.key == "NARUTO":
         candidates.extend(enemy.controller.active_clones())
     return [entity for entity in candidates if getattr(entity, "hp", 1) > 0 and is_alive_entity(entity)]
+
+
+def slot_entities(slot):
+    entities = [slot.body]
+    if slot.key == "YUTA" and slot.controller.rika.alive:
+        entities.append(slot.controller.rika)
+    if slot.key == "NARUTO":
+        entities.extend(slot.controller.active_clones())
+    return entities
+
+
+def clamp_entity_to_arena(entity):
+    entity.pos.x = clamp(entity.pos.x, ARENA.left + entity.radius, ARENA.right - entity.radius)
+    entity.pos.y = clamp(entity.pos.y, ARENA.top + entity.radius, ARENA.bottom - entity.radius)
+
+
+def absolute_effect_active(slot):
+    return (
+        (slot.key == "YUTA" and slot.controller.chain.life > 0) or
+        (slot.key == "DARKLORD" and slot.body.mode == "stab")
+    )
+
+
+def cancel_absolute_effect(slot):
+    if slot.key == "YUTA":
+        slot.controller.chain.life = 0
+        slot.controller.chain.pulse = 0
+    elif slot.key == "DARKLORD" and slot.body.mode == "stab":
+        slot.body.mode = "normal"
+        slot.body.mode_timer = 0
+        slot.body.stab_anim = 0
+        slot.body.vel = safe_normal(slot.body.vel, Vec2(1, 0)).rotate(130) * 350
+    slot.locked_target_entity = None
 
 
 def select_target_entity(slot, enemy):
@@ -222,6 +260,9 @@ def copy_status_to_target(slot, enemy, entity=None):
     target.hit_flash = getattr(entity, "hit_flash", 0)
     target.squash = getattr(entity, "squash", 0)
     if entity is enemy.body:
+        for name in vars(status):
+            setattr(target, name, getattr(status, name))
+    elif slot.key == "MOROZHAR":
         for name in vars(status):
             setattr(target, name, getattr(status, name))
     elif enemy.key == "NARUTO" and hasattr(entity, "stunned"):
@@ -249,32 +290,48 @@ def copy_target_to_enemy(slot, enemy):
         slot.key == "YUTA" and
         (slot.controller.beam.phase == "blast" or slot.controller.chain.life > 0)
     )
+    naruto_forced_position = (
+        slot.key == "NARUTO" and
+        getattr(slot.controller, "tournament_forced_target_motion", False)
+    )
+    forced_position = yuta_forced_position or naruto_forced_position
     if entity is enemy.body:
+        if naruto_keikaku_invulnerable(enemy, entity):
+            status_changed = any(getattr(target, name) != getattr(status, name) for name in vars(status))
+            if target.hp < enemy.body.hp or forced_position or status_changed:
+                naruto_keikaku_shield(enemy)
+            if forced_position:
+                enemy.body.pos = Vec2(target.pos)
+                enemy.body.vel = Vec2(target.vel)
+                clamp_entity_to_arena(enemy.body)
+            target.hp = enemy.body.hp
+            enemy.body.hit_flash = max(getattr(enemy.body, "hit_flash", 0), target.hit_flash)
+            enemy.body.squash = max(getattr(enemy.body, "squash", 0), target.squash)
+            return
         enemy.body.hp = target.hp
-        if yuta_forced_position:
+        if forced_position:
             enemy.body.pos = Vec2(target.pos)
             enemy.body.vel = Vec2(target.vel)
+            clamp_entity_to_arena(enemy.body)
         for name in vars(status):
             setattr(status, name, getattr(target, name))
         enemy.body.hit_flash = max(getattr(enemy.body, "hit_flash", 0), target.hit_flash)
         enemy.body.squash = max(getattr(enemy.body, "squash", 0), target.squash)
         if slot.key == "DARKLORD" and slot.body.mode == "stab":
             enemy.body.pos = Vec2(target.pos)
+            clamp_entity_to_arena(enemy.body)
     elif enemy.key == "NARUTO" and entity in enemy.controller.active_clones():
         clone = entity
         clone.pos = Vec2(target.pos)
         clone.vel = Vec2(target.vel)
+        clamp_entity_to_arena(clone)
         clone.radius = target.radius
         clone.facing = Vec2(target.facing)
         clone.hit_flash = max(clone.hit_flash, target.hit_flash)
         clone.squash = max(clone.squash, target.squash)
         clone.stunned = max(getattr(clone, "stunned", 0), getattr(target, "stunned", 0))
         clone.hp = max(0, target.hp)
-        if clone.hp <= 0 and clone.death_anim <= 0:
-            clone.death_anim = .55
-            enemy.controller.sound.play("clone_death")
-            enemy.controller.smoke(clone.pos, 20)
-            enemy.controller.text("POOF", clone.pos + Vec2(0, -76), ICE_WHITE)
+        clone_death(enemy, clone)
     elif enemy.key == "YUTA" and entity is enemy.controller.rika:
         rika = enemy.controller.rika
         if enemy.controller.beam.phase in {"charge", "blast"}:
@@ -284,13 +341,15 @@ def copy_target_to_enemy(slot, enemy):
             target.hp = rika.hp
         else:
             rika.hp = max(0, target.hp)
-            if yuta_forced_position:
+            if forced_position:
                 rika.pos = Vec2(target.pos)
                 rika.vel = Vec2(target.vel)
+                clamp_entity_to_arena(rika)
             rika.hit_flash = max(rika.hit_flash, target.hit_flash)
             rika.squash = max(rika.squash, target.squash)
             if slot.key == "DARKLORD" and slot.body.mode == "stab":
                 rika.pos = Vec2(target.pos)
+                clamp_entity_to_arena(rika)
             if rika.hp <= 0 and rika.alive:
                 rika.alive = False
                 rika.died_after_spawn = True
@@ -299,6 +358,233 @@ def copy_target_to_enemy(slot, enemy):
                 enemy.controller.sound.play("rika_death")
                 enemy.controller.text("RIKA DISPERSED", rika.pos + Vec2(0, -120), YUTA.RIKA_SKIN, True)
                 enemy.controller.rika_disappear_fx(rika.pos)
+    if slot.key == "MOROZHAR" and entity is not enemy.body:
+        for name in vars(status):
+            setattr(status, name, getattr(target, name))
+    if absolute_effect_active(slot) and entity is slot.locked_target_entity and not entity_active(entity):
+        cancel_absolute_effect(slot)
+
+
+def resolve_entity_collision(a, b):
+    delta = b.pos - a.pos
+    distance = delta.length()
+    minimum = a.radius + b.radius
+    if distance >= minimum:
+        return False
+    normal = delta / distance if distance > 0 else safe_normal(b.vel - a.vel, Vec2(1, 0))
+    overlap = minimum - distance
+    a.pos -= normal * overlap * .5
+    b.pos += normal * overlap * .5
+    a_speed = a.vel.length()
+    b_speed = b.vel.length()
+    a.vel = safe_normal(a.vel.reflect(normal)) * a_speed
+    b.vel = safe_normal(b.vel.reflect(normal)) * b_speed
+    a.squash = b.squash = .35
+    return True
+
+
+def clone_death(enemy, clone):
+    if clone.hp <= 0 and clone.death_anim <= 0:
+        clone.death_anim = .55
+        enemy.controller.sound.play("clone_death")
+        enemy.controller.smoke(clone.pos, 20)
+        enemy.controller.text("POOF", clone.pos + Vec2(0, -76), ICE_WHITE)
+
+
+def naruto_keikaku_invulnerable(enemy, entity):
+    return enemy.key == "NARUTO" and entity is enemy.body and getattr(enemy.body, "keikaku_active", 0) > 0
+
+
+def naruto_keikaku_shield(enemy):
+    enemy.controller.shield_pops.append(NARUTO.ShieldPop(Vec2(enemy.body.pos)))
+    enemy.controller.text("CHAKRA SHIELD", enemy.body.pos + Vec2(0, -92), ICE_WHITE)
+    enemy.controller.burst(enemy.body.pos, NARUTO.CHAKRA, 15, 240, "spark", 3)
+
+
+def damage_entity(source, enemy, entity, amount, label, power=1):
+    if naruto_keikaku_invulnerable(enemy, entity):
+        naruto_keikaku_shield(enemy)
+        return 0
+    if enemy.key == "YUTA" and entity is enemy.controller.rika and enemy.controller.beam.phase in {"charge", "blast"}:
+        enemy.controller.shield_pops.append(YUTA.ShieldPop(Vec2(entity.pos)))
+        enemy.controller.text("SHIELDED", entity.pos + Vec2(0, -122), PINK)
+        return 0
+    dealt = min(amount, getattr(entity, "hp", amount))
+    entity.hp = max(0, entity.hp - amount)
+    entity.hit_flash = max(getattr(entity, "hit_flash", 0), .12)
+    entity.squash = max(getattr(entity, "squash", 0), .32)
+    source.controller.text(f"-{int(dealt)}  {label}", entity.pos + Vec2(0, -64), HOT_RED, power > 1)
+    source.controller.impact(entity.pos, power)
+    if enemy.key == "NARUTO" and entity in enemy.controller.active_clones():
+        clone_death(enemy, entity)
+    elif enemy.key == "YUTA" and entity is enemy.controller.rika and entity.hp <= 0 and entity.alive:
+        entity.alive = False
+        entity.died_after_spawn = True
+        entity.despawning = 1.25
+        entity.saved_pure_love_cd = max(0, enemy.controller.yuta.pure_cd)
+        enemy.controller.sound.play("rika_death")
+        enemy.controller.text("RIKA DISPERSED", entity.pos + Vec2(0, -120), YUTA.RIKA_SKIN, True)
+        enemy.controller.rika_disappear_fx(entity.pos)
+    return dealt
+
+
+def add_heat_status(enemy, source, pos):
+    status = enemy.status
+    previous = status.heat_stacks
+    status.heat_stacks = min(3, status.heat_stacks + 1)
+    status.heat_decay_timer = 4.5
+    if previous < 3 and status.heat_stacks == 3:
+        status.burned = 7
+        status.burn_tick = .05
+        source.controller.text("IGNITED", pos + Vec2(0, -88), HEAT, True)
+        return True
+    return False
+
+
+def pool_spike_contact(pool, entity):
+    if pool.pos.distance_to(entity.pos) < 62 + entity.radius:
+        return True
+    for i, edge in enumerate(pool.points):
+        direction = safe_normal(edge)
+        length = 34 + (i % 4) * 12 + math.sin(pool.phase + i) * 6
+        start = pool.pos + edge
+        tip = start + direction * length
+        if DARK.point_segment_distance(entity.pos, start, tip) <= entity.radius + 9:
+            return True
+    return False
+
+
+def apply_vira_area_damage(source, enemy, selected_entity, pool_states, dt):
+    if source.key != "DARKLORD":
+        return
+    dark = source.body
+    for pool in source.controller.pools:
+        previous_hardened, _previous_tick = pool_states.get(id(pool), (pool.hardened, pool.tick))
+        newly_hardened = previous_hardened <= 0 < pool.hardened
+        if not hasattr(pool, "tournament_erupted_entities"):
+            pool.tournament_erupted_entities = set()
+        if not hasattr(pool, "tournament_spike_ticks"):
+            pool.tournament_spike_ticks = {}
+        candidates = enemy_target_candidates(enemy)
+        for entity in candidates:
+            if entity is selected_entity:
+                continue
+            key = id(entity)
+            if newly_hardened and key not in pool.tournament_erupted_entities and pool.pos.distance_to(entity.pos) < 80:
+                pool.tournament_erupted_entities.add(key)
+                amount = 45 if entity is not enemy.body else 145
+                damage_entity(source, enemy, entity, amount, "ERUPTION / SUMMON" if entity is not enemy.body else "ERUPTION", 3)
+            if pool.hardened > 0:
+                pool.tournament_spike_ticks[key] = max(0, pool.tournament_spike_ticks.get(key, 0) - dt)
+                if pool.tournament_spike_ticks[key] <= 0 and pool_spike_contact(pool, entity):
+                    amount = 12 if entity is not enemy.body else 37
+                    damage_entity(source, enemy, entity, amount, "VIRA SPIKES")
+                    healed = min(amount * .5, dark.max_hp - dark.hp)
+                    dark.hp += healed
+                    pool.tournament_spike_ticks[key] = .5
+                    if healed > 0:
+                        source.controller.text(f"+{healed:g} HP", dark.pos + Vec2(0, -72), HOT_RED)
+
+
+def apply_pure_love_area(source, enemy, selected_entity, damage_tick, dt):
+    if source.key != "YUTA" or source.controller.beam.phase != "blast":
+        return
+    controller = source.controller
+    beam = controller.beam
+    for entity in enemy_target_candidates(enemy):
+        if entity is selected_entity or not controller.target_inside_beam(entity):
+            continue
+        entity.pos += beam.direction * 430 * dt
+        clamp_entity_to_arena(entity)
+        speed = getattr(entity, "vel", Vec2()).length()
+        entity.vel = safe_normal(entity.vel.lerp(beam.direction * speed, min(1, dt * 5)), beam.direction) * speed
+        if damage_tick:
+            dealt = damage_entity(source, enemy, entity, 40, "PURE LOVE", 2)
+            if dealt > 0:
+                healed = min(10, source.body.max_hp - source.body.hp)
+                source.body.hp += healed
+                source.controller.add_ce(2.5, False)
+                if healed:
+                    source.controller.text(f"+{int(healed)} HP", source.body.pos + Vec2(0, -72), PINK)
+                source.controller.burst(entity.pos, PINK_HOT, 12, 190, "beam_fire", 6)
+
+
+def apply_moro_vision_area(source, enemy, selected_entity, dt):
+    if source.key != "MOROZHAR" or source.controller.vision <= 0:
+        return
+    controller = source.controller
+    beam_dir = Vec2(math.cos(controller.vision_angle), math.sin(controller.vision_angle))
+    origin = source.body.pos + beam_dir * 40
+    beam_distance = max(0, origin.distance_to(controller.vision_end))
+    if beam_distance <= 0:
+        return
+    hits = []
+    for entity in enemy_target_candidates(enemy):
+        if entity is selected_entity:
+            continue
+        hit_distance = MORO.ray_circle_hit_distance(origin, beam_dir, entity.pos, entity.radius + 12)
+        if hit_distance is None or hit_distance > beam_distance:
+            continue
+        hits.append(entity)
+    if not hits:
+        return
+    if not hasattr(controller, "tournament_vision_tick"):
+        controller.tournament_vision_tick = .05
+    controller.tournament_vision_tick -= dt
+    damage_tick = controller.tournament_vision_tick <= 0
+    if damage_tick:
+        controller.tournament_vision_tick = .35
+    for entity in hits:
+        controller.vision_hit_target = True
+        if damage_tick:
+            controller.vision_hits += 1
+            dealt = damage_entity(source, enemy, entity, 40, "HEAT VISION")
+            if dealt > 0:
+                healed = min(12, source.body.max_hp - source.body.hp)
+                source.body.hp += healed
+                if healed > 0:
+                    controller.text(f"+{healed:g} HP", source.body.pos + Vec2(0, -72), HEAT)
+                if controller.vision_hits % 2 == 0:
+                    add_heat_status(enemy, source, entity.pos)
+            controller.particles.append(MORO.Particle(
+                Vec2(entity.pos), Vec2(random.uniform(-150, 150), random.uniform(-150, 150)),
+                .25, .25, random.uniform(2, 5), HEAT, "spark"
+            ))
+
+
+def resolve_cross_summon_collisions(left, right):
+    left_entities = slot_entities(left)
+    right_entities = slot_entities(right)
+    for left_entity in left_entities:
+        for right_entity in right_entities:
+            if left_entity is left.body and right_entity is right.body:
+                continue
+            if not is_alive_entity(left_entity) or not is_alive_entity(right_entity):
+                continue
+            resolve_entity_collision(left_entity, right_entity)
+
+
+def trigger_ready_rasengan_contacts(naruto_slot, enemy):
+    if naruto_slot.key != "NARUTO":
+        return
+    naruto = naruto_slot.body
+    if (
+        not naruto.rasengan_ready or
+        naruto.keikaku_active > 0 or
+        naruto_slot.status.frozen > 0 or
+        naruto_slot.status.stunned > 0 or
+        getattr(naruto, "stunned", 0) > 0
+    ):
+        return
+    for entity in enemy_target_candidates(enemy):
+        if naruto.pos.distance_to(entity.pos) > naruto.radius + entity.radius:
+            continue
+        naruto_slot.target_entity = entity
+        copy_status_to_target(naruto_slot, enemy, entity)
+        naruto_slot.controller.rasengan_hit()
+        copy_target_to_enemy(naruto_slot, enemy)
+        naruto_slot.target_entity = None
+        break
 
 
 def status_locked(slot):
@@ -389,12 +675,25 @@ class Tournament:
         self.shake = 18
 
     def update_slot(self, slot, enemy, dt):
-        slot.target_entity = select_target_entity(slot, enemy)
+        if absolute_effect_active(slot) and slot.locked_target_entity is not None:
+            if entity_active(slot.locked_target_entity):
+                slot.target_entity = slot.locked_target_entity
+            else:
+                cancel_absolute_effect(slot)
+                slot.target_entity = select_target_entity(slot, enemy)
+        else:
+            slot.locked_target_entity = None
+            slot.target_entity = select_target_entity(slot, enemy)
+        selected_entity = slot.target_entity
         slot.controller.target_is_summon = slot.target_entity is not enemy.body
         slot.controller.enemy_summons = [entity for entity in enemy_target_candidates(enemy) if entity is not enemy.body]
         copy_status_to_target(slot, enemy, slot.target_entity)
+        pool_states = {}
+        if slot.key == "DARKLORD":
+            pool_states = {id(pool): (pool.hardened, pool.tick) for pool in slot.controller.pools}
         existing_burn = slot.target.burned
         existing_burn_tick = slot.target.burn_tick
+        yuta_beam_tick_before = slot.controller.beam.tick if slot.key == "YUTA" else 0
         # Burn damage is authoritative in the tournament engine, preventing
         # duplicated ticks when multiple character controllers inspect it.
         slot.target.burned = 0
@@ -410,9 +709,21 @@ class Tournament:
             slot.target.burn_tick = existing_burn_tick
         if position_locked(slot):
             slot.body.pos = old_pos
-        elif slot.status.slowed > 0:
+        elif slot.status.slowed > 0 and not deployed_motion_active(slot):
             slot.body.pos = old_pos + (slot.body.pos - old_pos) * .25
         copy_target_to_enemy(slot, enemy)
+        if absolute_effect_active(slot) and slot.locked_target_entity is None and entity_active(selected_entity):
+            slot.locked_target_entity = selected_entity
+        if not absolute_effect_active(slot):
+            slot.locked_target_entity = None
+        yuta_beam_damage_tick = (
+            slot.key == "YUTA" and
+            slot.controller.beam.phase == "blast" and
+            slot.controller.beam.tick > yuta_beam_tick_before
+        )
+        apply_pure_love_area(slot, enemy, selected_entity, yuta_beam_damage_tick, dt)
+        apply_moro_vision_area(slot, enemy, selected_entity, dt)
+        apply_vira_area_damage(slot, enemy, selected_entity, pool_states, dt)
         slot.target_entity = None
         slot.controller.round_over = 0
 
@@ -428,6 +739,9 @@ class Tournament:
                 status.burn_tick -= dt
                 if status.burn_tick <= 0:
                     status.burn_tick = .5
+                    if naruto_keikaku_invulnerable(slot, slot.body):
+                        naruto_keikaku_shield(slot)
+                        continue
                     slot.hp -= 32
                     slot.body.hit_flash = .12
                     source = next((fighter for fighter in (self.left, self.right)
@@ -464,8 +778,8 @@ class Tournament:
         delta = b.pos - a.pos
         distance = delta.length()
         minimum = a.radius + b.radius
-        if 0 < distance < minimum:
-            normal = delta / distance
+        if distance < minimum:
+            normal = delta / distance if distance > 0 else safe_normal(b.vel - a.vel, Vec2(1, 0))
             overlap = minimum - distance
             left_locked, right_locked = position_locked(self.left), position_locked(self.right)
             if not left_locked and not right_locked:
@@ -500,6 +814,9 @@ class Tournament:
         self.update_slot(self.left, self.right, dt)
         self.update_slot(self.right, self.left, dt)
         self.separate_fighters()
+        resolve_cross_summon_collisions(self.left, self.right)
+        trigger_ready_rasengan_contacts(self.left, self.right)
+        trigger_ready_rasengan_contacts(self.right, self.left)
         if self.left.hp <= 0 or self.right.hp <= 0 or self.round_time <= 0:
             if self.left.hp == self.right.hp:
                 winner = random.choice((self.left, self.right))

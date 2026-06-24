@@ -39,6 +39,7 @@ PUNCH_DAMAGE = 30
 SHURIKEN_RANGE = 500
 SHURIKEN_INTERVAL = .40
 SHURIKEN_DAMAGE = 20
+CLONE_DAMAGE_SCALE = .48
 LIFESTEAL = .45
 
 
@@ -175,8 +176,8 @@ class Clone:
     pos: Vec2
     vel: Vec2
     radius: float = 46
-    hp: float = 75
-    max_hp: float = 75
+    hp: float = 70
+    max_hp: float = 70
     facing: Vec2 = field(default_factory=lambda: Vec2(1, 0))
     punch_timer: float = field(default_factory=lambda: random.uniform(.05, .18))
     shuriken_timer: float = field(default_factory=lambda: random.uniform(.12, .35))
@@ -306,6 +307,7 @@ class Battle:
         self.actions_locked = False
         self.dummy_knockback = Vec2()
         self.dummy_knockback_stun_armed = False
+        self.tournament_forced_target_motion = False
 
     def burst(self, pos, color=CHAKRA, amount=16, speed=260, kind="spark", size=4):
         for _ in range(amount):
@@ -421,7 +423,7 @@ class Battle:
         if create_count <= 0:
             return
         n.chakra -= 300
-        n.clone_cd = 10
+        n.clone_cd = 12
         self.sound.play("clone")
         self.text(f"KAGEBUNSHIN  x{create_count}", n.pos + Vec2(0, -92), CHAKRA_WHITE, True)
         self.smoke(n.pos, 34)
@@ -485,7 +487,7 @@ class Battle:
         direction_to_target = safe_normal(target.pos - owner.pos)
         incoming = direction_to_target.rotate(random.choice((-145, -115, -75, 75, 115, 145)))
         color = CHAKRA if owner is self.naruto else CLONE_ORANGE
-        damage = PUNCH_DAMAGE if owner is self.naruto else PUNCH_DAMAGE // 2
+        damage = PUNCH_DAMAGE if owner is self.naruto else int(PUNCH_DAMAGE * CLONE_DAMAGE_SCALE)
         self.fists.append(FistAnim(Vec2(target.pos), incoming, color))
         owner.punch_timer = PUNCH_INTERVAL
         self.sound.play("punch")
@@ -548,7 +550,7 @@ class Battle:
         n, d = self.naruto, self.dummy
         if n.fail_pending_cd and n.stunned <= 0:
             n.fail_pending_cd = False
-            n.clone_cd = 10
+            n.clone_cd = 12
         if n.keikaku_active > 0:
             n.keikaku_active -= dt
             n.keikaku_tick -= dt
@@ -617,7 +619,7 @@ class Battle:
             if shuriken.pos.distance_to(self.dummy.pos) <= self.dummy.radius + 12:
                 shuriken.hit = True
                 self.sound.play("shuriken_hit")
-                damage = SHURIKEN_DAMAGE if shuriken.owner is self.naruto else SHURIKEN_DAMAGE // 2
+                damage = SHURIKEN_DAMAGE if shuriken.owner is self.naruto else int(SHURIKEN_DAMAGE * CLONE_DAMAGE_SCALE)
                 dealt = self.damage_dummy(damage, "SHURIKEN", (205, 220, 235), 1)
                 self.heal_owner(shuriken.owner, dealt)
                 if shuriken.owner is self.naruto:
@@ -625,8 +627,10 @@ class Battle:
         self.shuriken = [s for s in self.shuriken if s.life > 0 and not s.hit]
 
     def update_dummy_knockback(self, dt):
+        self.tournament_forced_target_motion = False
         if self.dummy_knockback.length_squared() <= .001:
             return False
+        self.tournament_forced_target_motion = True
         self.dummy.pos += self.dummy_knockback * dt
         self.dummy_knockback *= .08 ** dt
         hit_wall = self.wall_bounce(self.dummy, self.naruto, True)
@@ -984,7 +988,7 @@ class Battle:
             status.append(f"DUMMY STUNNED {d.stunned:.1f}s")
         st = fonts["tiny"].render("   ".join(status), True, GOLD)
         dst.blit(st, (W / 2 - st.get_width() / 2, 76))
-        skills = [("KAGEBUNSHIN", n.clone_cd, 10, ORANGE), ("RASENGAN", n.rasengan_cd, 7.5, CHAKRA),
+        skills = [("KAGEBUNSHIN", n.clone_cd, 12, ORANGE), ("RASENGAN", n.rasengan_cd, 7.5, CHAKRA),
                   ("KEIKAKU", n.keikaku_cd if n.keikaku_active <= 0 else 0, 6, CHAKRA_WHITE)]
         for i, (label, cd, total, color) in enumerate(skills):
             x, y = 82 + i * 208, H - 52
