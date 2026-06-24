@@ -105,9 +105,9 @@ Implemented Behavior:
 - Creates a big animated fist from a randomized incoming direction.
 - Naruto gains 15 Chakra on his own successful punches.
 - The attacker heals for 45% of damage dealt.
-- Clones use 48% of Naruto's damage:
-  - Clone Ninja Punch: 14 damage
-  - Clone Shuriken Throw: 9 damage
+- Clones use 60% of Naruto's damage:
+  - Clone Ninja Punch: 18 damage
+  - Clone Shuriken Throw: 12 damage
 - Clone hits heal that clone and do not grant Naruto Chakra.
 - Clone healing automatically scales down because lifesteal is based on
   damage dealt.
@@ -157,7 +157,7 @@ Each Clone:
 - Speed: 350 pixels per second.
 - Has its own thin HP bar.
 - Can be hit and killed by DummyBot contact punches.
-- Uses 48%-damage versions of Naruto's Ninja Punch and Shuriken Throw.
+- Uses 60%-damage versions of Naruto's Ninja Punch and Shuriken Throw.
 - Cannot cast Kagebunshin, Rasengan, or Keikaku.
 - Does not gain or store Chakra.
 - On spawn: white smoke puff and grow-in animation.
